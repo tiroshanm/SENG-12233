@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Step 08: JDBC &amp; the Database · SENG 12233 LMS Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+            --white: #ffffff;
+            --off-white: #f8f8f8;
+            --cream: #f5f5f5;
+            --light-gray: #e8e8e6;
+            --medium-gray: #999999;
+            --dark-gray: #4a4a4a;
+            --charcoal: #2a2a2a;
+            --black: #1a1a1a;
+            --accent: #8b7355;
+            --accent-light: #c4b5a0;
+            --accent-pale: #e8dfd4;
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-sans: 'Source Sans 3', -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--off-white);
+            color: var(--charcoal);
+            line-height: 1.7;
+            font-weight: 300;
+            overflow-x: hidden;
+        }
+
+        ::selection { background: var(--accent-light); color: var(--black); }
+        a { text-decoration: none; color: inherit; }
+        button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+        /* ── Scroll Progress ── */
+        .scroll-progress {
+            position: fixed; top: 0; left: 0;
+            height: 2px; background: var(--accent);
+            z-index: 1001; transition: width 0.1s ease;
+        }
+
+        /* ── Navigation ── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            padding: 1.2rem 4rem;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(248, 248, 248, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid transparent;
+            transition: all 0.4s ease;
+        }
+        nav.scrolled { border-bottom: 1px solid var(--light-gray); padding: 0.8rem 4rem; }
+        .nav-left { display: flex; align-items: center; gap: 2rem; }
+        .nav-logo { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 400; letter-spacing: 0.02em; color: var(--black); }
+        .nav-logo span { color: var(--accent); }
+        .nav-back { font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--medium-gray); transition: color 0.3s ease; display: flex; align-items: center; gap: 0.4rem; }
+        .nav-back:hover { color: var(--accent); }
+        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+        .nav-links a { font-size: 0.8rem; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dark-gray); position: relative; transition: color 0.3s ease; }
+        .nav-links a::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1px; background: var(--accent); transition: width 0.3s ease; }
+        .nav-links a:hover { color: var(--black); }
+        .nav-links a:hover::after { width: 100%; }
+        .nav-links a.active { color: var(--accent); }
+        .nav-links a.active::after { width: 100%; }
+        .mobile-menu-btn { display: none; padding: 0.5rem; }
+        .mobile-menu-btn span { display: block; width: 22px; height: 1.5px; background: var(--black); margin: 5px 0; transition: all 0.3s ease; }
+
+        /* ── Hero ── */
+        .hero {
+            padding: 10rem 4rem 4rem; text-align: center; position: relative;
+            background: linear-gradient(180deg, #f8f8f8 0%, #f2f2f2 100%);
+        }
+        .hero::before {
+            content: ''; position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 400px;
+            background: radial-gradient(circle, var(--accent-light) 0%, transparent 70%);
+            opacity: 0.12; filter: blur(80px);
+        }
+        .hero-label { font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; font-weight: 500; }
+        .hero h1 { font-family: var(--font-serif); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 300; line-height: 1.15; color: var(--black); margin-bottom: 1rem; letter-spacing: -0.02em; }
+        .hero h1 em { font-style: italic; color: var(--accent); }
+        .hero-description { font-size: 1.05rem; color: var(--dark-gray); max-width: 600px; margin: 0 auto 2rem; line-height: 1.8; }
+        .hero-meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; }
+        .meta-tag { padding: 0.45rem 1rem; background: rgba(255,255,255,0.8); border: 1px solid var(--light-gray); font-size: 0.72rem; letter-spacing: 0.05em; color: var(--dark-gray); transition: all 0.3s ease; }
+        .meta-tag:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Progress Bar ── */
+        .progress-section { max-width: 600px; margin: 2rem auto 0; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--medium-gray); margin-bottom: 0.5rem; }
+        .progress-label-value { color: var(--accent); font-weight: 500; }
+        .progress-bar { width: 100%; height: 3px; background: var(--light-gray); overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); transition: width 0.8s ease; }
+
+        /* ── Module Band ── */
+        .module-band {
+            background: var(--black);
+            padding: 0.75rem 4rem;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 0.5rem;
+        }
+        .module-band-left { font-size: 0.72rem; letter-spacing: 0.06em; color: var(--medium-gray); }
+        .module-band-left strong { color: var(--accent); font-weight: 500; }
+        .module-band-right { display: flex; gap: 1.5rem; }
+        .module-band-right a { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.4); transition: color 0.3s; }
+        .module-band-right a:hover { color: var(--white); }
+
+        /* ── Layout ── */
+        .layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; max-width: 1400px; margin: 0 auto; }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            padding: 2rem 1.5rem; border-right: 1px solid var(--light-gray);
+            position: sticky; top: 60px; height: calc(100vh - 60px);
+            overflow-y: auto; background: var(--off-white);
+        }
+        .sidebar::-webkit-scrollbar { width: 3px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--light-gray); }
+        .sidebar-title { font-family: var(--font-serif); font-size: 1rem; font-weight: 400; color: var(--black); margin-bottom: 0.3rem; }
+        .sidebar-desc { font-size: 0.75rem; color: var(--medium-gray); margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--light-gray); line-height: 1.5; }
+        .sidebar-section { margin-bottom: 1.5rem; }
+        .sidebar-section-label { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 500; }
+        .sidebar-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; font-size: 0.78rem; color: var(--dark-gray); cursor: pointer; transition: color 0.2s ease; }
+        .sidebar-item:hover { color: var(--accent); }
+        .sidebar-check { font-size: 0.65rem; color: var(--accent); min-width: 14px; }
+        .sidebar-lock { font-size: 0.65rem; color: var(--light-gray); min-width: 14px; }
+        .sidebar-nav-links { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--light-gray); }
+        .sidebar-nav-link { display: block; padding: 0.4rem 0; font-size: 0.8rem; color: var(--dark-gray); transition: color 0.2s ease; }
+        .sidebar-nav-link:hover { color: var(--accent); }
+        .sidebar-nav-link.active { color: var(--accent); font-weight: 500; }
+
+        /* ── Main Content ── */
+        .main-content { padding: 2.5rem 3rem; min-height: 100vh; }
+
+        /* ── Section Headers ── */
+        .section-header { margin-bottom: 1.5rem; }
+        .section-label { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem; font-weight: 500; }
+        .section-title { font-family: var(--font-serif); font-size: clamp(1.4rem, 2.5vw, 1.8rem); font-weight: 300; color: var(--black); letter-spacing: -0.01em; }
+
+        /* ── Overview Card ── */
+        .overview-card { background: #f2f2f2; padding: 1.5rem; margin-bottom: 2.5rem; border-left: 3px solid var(--accent); }
+        .overview-card p { font-size: 0.9rem; color: var(--dark-gray); line-height: 1.7; margin-bottom: 0.5rem; }
+        .overview-card p:last-child { margin-bottom: 0; }
+        .overview-card strong { color: var(--black); font-weight: 500; }
+
+        /* ── Part Divider ── */
+        .part-divider { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; margin: 2.5rem 0 1.5rem; border-bottom: 1px solid var(--light-gray); }
+        .part-divider-num { font-family: var(--font-serif); font-size: 2rem; font-weight: 300; color: var(--accent-light); font-style: italic; line-height: 1; }
+        .part-divider-content h3 { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 400; color: var(--black); }
+        .part-divider-content p { font-size: 0.72rem; color: var(--medium-gray); letter-spacing: 0.03em; }
+
+        /* ── Lectures Grid ── */
+        .lectures-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.2rem; margin-bottom: 1.5rem; }
+
+        /* ── Lecture Card ── */
+        .lecture-card { background: var(--white); border: 1px solid var(--light-gray); transition: all 0.4s ease; position: relative; overflow: hidden; }
+        .lecture-card::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 0; background: var(--accent); transition: height 0.4s ease; }
+        .lecture-card:hover { border-color: var(--accent-light); box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+        .lecture-card:hover::before { height: 100%; }
+        .lecture-card-header { padding: 1.2rem 1.5rem 0.8rem; display: flex; justify-content: space-between; align-items: flex-start; }
+        .lecture-num { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 300; color: var(--light-gray); line-height: 1; font-style: italic; transition: color 0.3s ease; }
+        .lecture-card:hover .lecture-num { color: var(--accent-light); }
+        .lecture-title { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 400; color: var(--black); line-height: 1.35; margin-bottom: 0.2rem; }
+        .lecture-subtitle { font-size: 0.78rem; color: var(--medium-gray); }
+        .lecture-ref { font-size: 0.68rem; color: var(--accent); margin-top: 0.3rem; letter-spacing: 0.03em; }
+        .lecture-card-body { padding: 0 1.5rem 1.2rem; }
+        .topics-list { list-style: none; margin-bottom: 1rem; }
+        .topics-list li { padding: 0.3rem 0 0.3rem 1.2rem; position: relative; font-size: 0.82rem; color: var(--dark-gray); border-bottom: 1px solid #fafafa; line-height: 1.5; }
+        .topics-list li:last-child { border-bottom: none; }
+        .topics-list li::before { content: '→'; position: absolute; left: 0; color: var(--accent-light); font-size: 0.72rem; }
+        .lecture-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+        /* ── Buttons ── */
+        .btn { padding: 0.45rem 1rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.4rem; }
+        .btn-primary { background: var(--accent); color: var(--white); }
+        .btn-primary:hover { background: var(--charcoal); }
+        .btn-secondary { background: transparent; color: var(--dark-gray); border: 1px solid var(--light-gray); }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Assessments ── */
+        .assessments-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.2rem; margin-top: 1.5rem; }
+        .assessment-card { background: var(--white); border: 1px solid var(--light-gray); padding: 1.5rem; transition: all 0.4s ease; position: relative; overflow: hidden; }
+        .assessment-card::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 0; background: var(--accent); transition: height 0.4s ease; }
+        .assessment-card:hover { border-color: var(--accent-light); box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+        .assessment-card:hover::before { height: 100%; }
+        .assessment-type { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 500; }
+        .assessment-title { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 400; color: var(--black); margin-bottom: 0.4rem; line-height: 1.3; }
+        .assessment-meta { font-size: 0.78rem; color: var(--medium-gray); margin-bottom: 0.8rem; }
+        .assessment-desc { font-size: 0.83rem; color: var(--dark-gray); line-height: 1.65; margin-bottom: 1rem; }
+        .assessment-tasks { list-style: none; margin-bottom: 1rem; }
+        .assessment-tasks li { padding: 0.3rem 0 0.3rem 1.2rem; position: relative; font-size: 0.8rem; color: var(--dark-gray); border-bottom: 1px solid #fafafa; }
+        .assessment-tasks li:last-child { border-bottom: none; }
+        .assessment-tasks li::before { content: '→'; position: absolute; left: 0; color: var(--accent-light); font-size: 0.72rem; }
+        .assessment-weight { display: inline-block; padding: 0.3rem 0.8rem; background: var(--accent-pale); color: var(--accent); font-size: 0.7rem; letter-spacing: 0.05em; font-weight: 500; }
+
+        /* ── Resources Section ── */
+        .resources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+        .resource-card { padding: 1.5rem; background: #f2f2f2; text-align: center; transition: all 0.3s ease; }
+        .resource-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
+        .resource-icon { font-size: 1.5rem; margin-bottom: 0.6rem; }
+        .resource-card h3 { font-family: var(--font-serif); font-size: 0.95rem; font-weight: 400; color: var(--black); margin-bottom: 0.25rem; }
+        .resource-card h3 a { color: inherit; transition: color 0.3s; }
+        .resource-card h3 a:hover { color: var(--accent); }
+        .resource-card p { font-size: 0.72rem; color: var(--medium-gray); }
+
+        /* ── Learning Path ── */
+        .learning-path { margin-top: 1.5rem; }
+        .path-item { display: flex; gap: 1rem; padding: 0.8rem 0; border-bottom: 1px solid var(--light-gray); }
+        .path-item:last-child { border-bottom: none; }
+        .path-phase { font-family: var(--font-serif); font-size: 0.9rem; font-style: italic; color: var(--accent); min-width: 60px; }
+        .path-desc { font-size: 0.85rem; color: var(--dark-gray); line-height: 1.6; }
+        .path-desc strong { color: var(--black); font-weight: 500; }
+
+        /* ── Course Structure ── */
+        .course-structure { margin-top: 2rem; padding: 1.5rem; background: #f2f2f2; border-left: 3px solid var(--accent); }
+        .course-structure p { font-size: 0.85rem; color: var(--dark-gray); margin-bottom: 0.5rem; line-height: 1.7; }
+        .course-structure p:last-child { margin-bottom: 0; }
+        .course-structure strong { color: var(--black); font-weight: 500; }
+
+        /* ── Footer ── */
+        footer { background: var(--black); color: var(--white); text-align: center; padding: 2.5rem 4rem; }
+        .footer-title { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 400; margin-bottom: 0.3rem; }
+        .footer-sub { font-size: 0.72rem; color: var(--medium-gray); margin-bottom: 1rem; }
+        .footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
+        .footer-links a { font-size: 0.75rem; color: var(--medium-gray); letter-spacing: 0.04em; transition: color 0.3s ease; }
+        .footer-links a:hover { color: var(--white); }
+        .footer-copy { font-size: 0.65rem; color: var(--medium-gray); margin-top: 1.2rem; opacity: 0.6; }
+
+        /* ── Animations ── */
+        .fade-in { opacity: 0; transform: translateY(12px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+        /* ── Responsive ── */
+        @media (max-width: 1024px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .main-content { padding: 2rem; }
+        }
+        @media (max-width: 768px) {
+            nav { padding: 1rem 1.5rem; }
+            .nav-links { display: none; }
+            .mobile-menu-btn { display: block; }
+            .hero { padding: 8rem 1.5rem 3rem; }
+            .main-content { padding: 1.5rem; }
+            .lectures-grid { grid-template-columns: 1fr; }
+            .assessments-grid { grid-template-columns: 1fr; }
+            .hero-meta { flex-direction: column; align-items: center; }
+            .resources-grid { grid-template-columns: 1fr 1fr; }
+            .module-band { padding: 0.75rem 1.5rem; }
+            footer { padding: 2rem 1.5rem; }
+        }
+        @media (max-width: 480px) { .resources-grid { grid-template-columns: 1fr; } }
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.hl .hll { background-color: #49483e }
+.hl { background: #272822; color: #F8F8F2 }
+.hl .c { color: #959077 } /* Comment */
+.hl .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.hl .esc { color: #F8F8F2 } /* Escape */
+.hl .g { color: #F8F8F2 } /* Generic */
+.hl .k { color: #66D9EF } /* Keyword */
+.hl .l { color: #AE81FF } /* Literal */
+.hl .n { color: #F8F8F2 } /* Name */
+.hl .o { color: #FF4689 } /* Operator */
+.hl .x { color: #F8F8F2 } /* Other */
+.hl .p { color: #F8F8F2 } /* Punctuation */
+.hl .ch { color: #959077 } /* Comment.Hashbang */
+.hl .cm { color: #959077 } /* Comment.Multiline */
+.hl .cp { color: #959077 } /* Comment.Preproc */
+.hl .cpf { color: #959077 } /* Comment.PreprocFile */
+.hl .c1 { color: #959077 } /* Comment.Single */
+.hl .cs { color: #959077 } /* Comment.Special */
+.hl .gd { color: #FF4689 } /* Generic.Deleted */
+.hl .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.hl .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.hl .gr { color: #FF4689 } /* Generic.Error */
+.hl .gh { color: #F8F8F2 } /* Generic.Heading */
+.hl .gi { color: #A6E22E } /* Generic.Inserted */
+.hl .go { color: #66D9EF } /* Generic.Output */
+.hl .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.hl .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.hl .gu { color: #959077 } /* Generic.Subheading */
+.hl .gt { color: #66D9EF } /* Generic.Traceback */
+.hl .kc { color: #66D9EF } /* Keyword.Constant */
+.hl .kd { color: #66D9EF } /* Keyword.Declaration */
+.hl .kn { color: #FF4689 } /* Keyword.Namespace */
+.hl .kp { color: #66D9EF } /* Keyword.Pseudo */
+.hl .kr { color: #66D9EF } /* Keyword.Reserved */
+.hl .kt { color: #66D9EF } /* Keyword.Type */
+.hl .ld { color: #E6DB74 } /* Literal.Date */
+.hl .m { color: #AE81FF } /* Literal.Number */
+.hl .s { color: #E6DB74 } /* Literal.String */
+.hl .na { color: #A6E22E } /* Name.Attribute */
+.hl .nb { color: #A6E22E } /* Name.Builtin */
+.hl .nc { color: #A6E22E } /* Name.Class */
+.hl .no { color: #66D9EF } /* Name.Constant */
+.hl .nd { color: #A6E22E } /* Name.Decorator */
+.hl .ni { color: #F8F8F2 } /* Name.Entity */
+.hl .ne { color: #A6E22E } /* Name.Exception */
+.hl .nf { color: #A6E22E } /* Name.Function */
+.hl .nl { color: #F8F8F2 } /* Name.Label */
+.hl .nn { color: #F8F8F2 } /* Name.Namespace */
+.hl .nx { color: #A6E22E } /* Name.Other */
+.hl .py { color: #F8F8F2 } /* Name.Property */
+.hl .nt { color: #FF4689 } /* Name.Tag */
+.hl .nv { color: #F8F8F2 } /* Name.Variable */
+.hl .ow { color: #FF4689 } /* Operator.Word */
+.hl .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.hl .w { color: #F8F8F2 } /* Text.Whitespace */
+.hl .mb { color: #AE81FF } /* Literal.Number.Bin */
+.hl .mf { color: #AE81FF } /* Literal.Number.Float */
+.hl .mh { color: #AE81FF } /* Literal.Number.Hex */
+.hl .mi { color: #AE81FF } /* Literal.Number.Integer */
+.hl .mo { color: #AE81FF } /* Literal.Number.Oct */
+.hl .sa { color: #E6DB74 } /* Literal.String.Affix */
+.hl .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.hl .sc { color: #E6DB74 } /* Literal.String.Char */
+.hl .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.hl .sd { color: #E6DB74 } /* Literal.String.Doc */
+.hl .s2 { color: #E6DB74 } /* Literal.String.Double */
+.hl .se { color: #AE81FF } /* Literal.String.Escape */
+.hl .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.hl .si { color: #E6DB74 } /* Literal.String.Interpol */
+.hl .sx { color: #E6DB74 } /* Literal.String.Other */
+.hl .sr { color: #E6DB74 } /* Literal.String.Regex */
+.hl .s1 { color: #E6DB74 } /* Literal.String.Single */
+.hl .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.hl .bp { color: #A6E22E } /* Name.Builtin.Pseudo */
+.hl .fm { color: #A6E22E } /* Name.Function.Magic */
+.hl .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.hl .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.hl .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.hl .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.hl .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.hl { background:#1e1e1e !important; }
+.guide-intro { max-width: 860px; }
+.step-block { margin: 1.4rem 0; }
+.step-block p { font-size: 0.92rem; color: var(--dark-gray); line-height: 1.75; margin-bottom: .7rem; }
+.step-block h3 { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 400; color: var(--black); margin: 2rem 0 .6rem; }
+.step-block h4 { font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 1.2rem 0 .4rem; font-weight: 500; }
+.step-block ul, .step-block ol { margin: 0 0 .9rem 1.3rem; font-size: .9rem; color: var(--dark-gray); }
+.step-block li { margin: .25rem 0; line-height: 1.65; }
+.step-block code, .callout code { font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size: .8em; background: #efece6; padding: .05rem .3rem; }
+.step-block strong { color: var(--black); font-weight: 500; }
+.step-block table { border-collapse: collapse; width: 100%; font-size: .82rem; margin: .8rem 0 1.2rem; }
+.step-block th { background: var(--accent-pale); text-align: left; padding: .45rem .7rem; font-weight: 500; }
+.step-block td { padding: .4rem .7rem; border-bottom: 1px solid var(--light-gray); vertical-align: top; }
+.codefile { margin: 1rem 0 1.4rem; border: 1px solid var(--light-gray); background: #fff; }
+.codefile > summary { cursor: pointer; padding: .55rem .9rem; font-size: .78rem; letter-spacing: .04em; color: var(--dark-gray); display: flex; gap: .8rem; align-items: baseline; list-style: none; }
+.codefile > summary::-webkit-details-marker { display: none; }
+.codefile > summary::before { content: '+'; color: var(--accent); font-weight: 600; width: .8rem; }
+.codefile[open] > summary::before { content: '\2212'; }
+.codefile .fname { font-family: 'DejaVu Sans Mono', Consolas, monospace; color: var(--black); font-size: .78rem; }
+.codefile .fcap { color: var(--medium-gray); font-size: .76rem; }
+.codefile .hl { margin: 0; overflow-x: auto; }
+.codefile pre { margin: 0; padding: .9rem 1rem; font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size: .76rem; line-height: 1.5; font-weight: 400; }
+.cmd, .out { margin: .8rem 0 1.2rem; font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size: .76rem; line-height: 1.55; padding: .8rem 1rem; overflow-x: auto; white-space: pre; font-weight: 400; }
+.cmd { background: #1e1e1e; color: #e6e6e6; }
+.cmd::before { content: '$ run'; display:block; color: var(--accent-light); font-size: .64rem; letter-spacing: .15em; text-transform: uppercase; margin-bottom: .3rem; }
+.out { background: #f2f2f2; border-left: 3px solid var(--accent); color: var(--charcoal); }
+.out::before { content: 'expected output'; display:block; color: var(--accent); font-size: .64rem; letter-spacing: .15em; text-transform: uppercase; margin-bottom: .3rem; font-family: var(--font-sans); }
+figure { margin: 1.2rem 0 1.6rem; background: #fff; border: 1px solid var(--light-gray); padding: .8rem; }
+figure img { max-width: 100%; display: block; margin: 0 auto; }
+figcaption { font-size: .76rem; color: var(--medium-gray); margin-top: .5rem; text-align: center; }
+.callout { margin: 1.1rem 0; padding: .9rem 1.1rem; font-size: .88rem; line-height: 1.7; color: var(--dark-gray); background: #f2f2f2; border-left: 3px solid var(--accent); }
+.callout.tip { border-left-color: #5d8a5a; background: #eef3ec; }
+.callout.warn { border-left-color: #b5651d; background: #f7eee3; }
+.callout.check { border-left-color: #3d6a99; background: #ecf1f6; }
+.callout strong { color: var(--black); font-weight: 600; }
+.pager { display:flex; justify-content: space-between; gap: 1rem; margin: 3rem 0 1rem; padding-top: 1.5rem; border-top: 1px solid var(--light-gray); flex-wrap: wrap; }
+.checklist { list-style: none; margin-left: 0 !important; }
+.checklist li { padding-left: 1.6rem; position: relative; }
+.checklist li::before { content: '\2610'; position: absolute; left: 0; color: var(--accent); }
+.sidebar-item a { display:flex; gap:.5rem; width:100%; }
+.sidebar-item.current { color: var(--accent); font-weight: 500; }
+
+</style></head><body>
+<div class="scroll-progress" id="scrollBar"></div>
+<nav id="mainNav"><div class="nav-left"><div class="nav-logo">SENG<span>.</span>12233</div><a class="nav-back" href="../index.html">← Course page</a></div>
+<ul class="nav-links"><li><a href="index.html" class="">LMS Guide</a></li><li><a href="../index.html#labs">Labs</a></li><li><a href="../index.html#lectures">Lectures</a></li><li><a href="../index.html#git">Git</a></li></ul>
+<button class="mobile-menu-btn" aria-label="Menu"><span></span><span></span><span></span></button></nav>
+<section class="hero" style="padding-bottom:2.5rem"><p class="hero-label">LMS Guide · Step 08 of 9 · Week 11 · Lab 8</p><h1>JDBC & the Database</h1><p class="hero-description"></p><div class="hero-meta"><span class="meta-tag">Lab 8</span><span class="meta-tag">Week 11</span><span class="meta-tag">JDBC</span><span class="meta-tag">SQLite</span></div></section>
+<div class="layout"><aside class="sidebar">
+    <p class="sidebar-title">LMS Guide</p>
+    <p class="sidebar-desc">Build the Library Management System step by step</p>
+    <div class="sidebar-nav-links">
+      <a class="sidebar-nav-link" href="index.html">Overview</a>
+      <a class="sidebar-nav-link" href="../index.html">← Course page</a>
+    </div>
+    <div class="sidebar-section"><p class="sidebar-section-label">Steps</p><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step01_encapsulation.html">01 · Classes, Objects & Encapsulation</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step02_inheritance.html">02 · Inheritance & Polymorphism</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step03_interfaces.html">03 · Abstract Classes & Interfaces</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step04_exceptions.html">04 · Exception Handling</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step05_gui_layouts.html">05 · GUI I: Layouts & Widgets</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step06_gui_events_mvc.html">06 · GUI II: Events & MVC</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step07_generics_streams.html">07 · Generics, Collections & Streams</a></div><div class="sidebar-item current"><span class="sidebar-check">●</span><a href="step08_jdbc.html">08 · JDBC & the Database</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step09_threads_final.html">09 · Threads & Shipping v1.0</a></div></div>
+  </aside><main class="main-content"><div class="guide-intro"><div class="step-block"><p><strong>Goal:</strong> save everything in a <strong>SQLite</strong> database through <strong>DAOs</strong>, so the LMS survives a restart.</p>
+<div class="callout warn"><p><strong>Warning</strong> Add the SQLite driver first: download <code>sqlite-jdbc-3.46.0.0.jar</code> (group <code>org.xerial</code>) from Maven Central into a <code>lib/</code> folder and add it to your IDE's libraries. <strong>Never commit the jar or <code>lms.db</code>.</strong></p>
+</div></div>
+<figure><img src="img/er.png" alt="Three tables, two foreign keys"/><figcaption>Three tables, two foreign keys</figcaption></figure>
+<figure><img src="img/layers.png" alt="Where JDBC fits: only lms.dao knows SQL"/><figcaption>Where JDBC fits: only lms.dao knows SQL</figcaption></figure>
+<div class="step-block"><h3>1. The connection and the tables</h3></div>
+<details class="codefile" open><summary><span class="fname">src/lms/dao/Database.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.dao</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.exception.DataAccessException</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.sql.Connection</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.sql.DriverManager</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.sql.SQLException</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.sql.Statement</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Database - the ONE place that knows how to reach the database (Week 11).</span>
+<span class="cm"> *</span>
+<span class="cm"> * Default is SQLite: a single file "lms.db" next to the program. No server</span>
+<span class="cm"> * to install. The URL can be overridden with  -Dlms.db.url=...  which is how</span>
+<span class="cm"> * the tests use a throw-away in-memory database.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Tables:</span>
+<span class="cm"> *   items   (id PK, type, title, detail)</span>
+<span class="cm"> *   members (id PK, name, type)</span>
+<span class="cm"> *   loans   (item_id FK, member_id FK, borrowed_at, returned_at NULL until returned)</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Database</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">DEFAULT_URL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"jdbc:sqlite:lms.db"</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="nf">Database</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">url</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">getProperty</span><span class="p">(</span><span class="s">"lms.db.url"</span><span class="p">,</span><span class="w"> </span><span class="n">DEFAULT_URL</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Opens a NEW connection. Callers close it with try-with-resources. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Connection</span><span class="w"> </span><span class="nf">getConnection</span><span class="p">()</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">SQLException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Connection</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DriverManager</span><span class="p">.</span><span class="na">getConnection</span><span class="p">(</span><span class="n">url</span><span class="p">());</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">url</span><span class="p">().</span><span class="na">startsWith</span><span class="p">(</span><span class="s">"jdbc:sqlite:"</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">// SQLite ignores foreign keys unless you switch them on per connection.</span>
+<span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Statement</span><span class="w"> </span><span class="n">st</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">con</span><span class="p">.</span><span class="na">createStatement</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">st</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span><span class="s">"PRAGMA foreign_keys = ON"</span><span class="p">);</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">con</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Creates the tables if they do not exist yet. Safe to call every start-up. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">init</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">ddl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s">"CREATE TABLE IF NOT EXISTS items ("</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" id VARCHAR(20) PRIMARY KEY,"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" type VARCHAR(10) NOT NULL,"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" title VARCHAR(200) NOT NULL,"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" detail VARCHAR(200) NOT NULL)"</span><span class="p">,</span>
+<span class="w">            </span><span class="s">"CREATE TABLE IF NOT EXISTS members ("</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" id VARCHAR(20) PRIMARY KEY,"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" name VARCHAR(100) NOT NULL,"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" type VARCHAR(10) NOT NULL)"</span><span class="p">,</span>
+<span class="w">            </span><span class="s">"CREATE TABLE IF NOT EXISTS loans ("</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" item_id VARCHAR(20) NOT NULL,"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" member_id VARCHAR(20) NOT NULL,"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" borrowed_at VARCHAR(30) NOT NULL,"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" returned_at VARCHAR(30),"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" PRIMARY KEY (item_id, borrowed_at),"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" FOREIGN KEY (item_id) REFERENCES items(id),"</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">" FOREIGN KEY (member_id) REFERENCES members(id))"</span>
+<span class="w">        </span><span class="p">};</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getConnection</span><span class="p">();</span><span class="w"> </span><span class="n">Statement</span><span class="w"> </span><span class="n">st</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">con</span><span class="p">.</span><span class="na">createStatement</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">ddl</span><span class="p">)</span><span class="w"> </span><span class="n">st</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SQLException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DataAccessException</span><span class="p">(</span><span class="s">"Could not create the database tables"</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<details class="codefile"><summary><span class="fname">src/lms/exception/DataAccessException.java</span><span class="fcap">Translate SQLException into something the app understands</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.exception</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * UNCHECKED wrapper for java.sql.SQLException (Week 11).</span>
+<span class="cm"> *</span>
+<span class="cm"> * SQLException is a low-level, checked, database-specific exception. If it</span>
+<span class="cm"> * leaked up to the GUI, every layer would need to know about SQL. Instead</span>
+<span class="cm"> * the DAO catches it and rethrows this one, with a friendly message.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">DataAccessException</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">RuntimeException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">DataAccessException</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="n">Throwable</span><span class="w"> </span><span class="n">cause</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">super</span><span class="p">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="n">cause</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="step-block"><h3>2. One DAO per table</h3>
+<p>Every query uses <code>?</code> placeholders and try-with-resources. <code>ItemDAO</code> turns a <code>type</code> column back into the right subclass.</p></div>
+<details class="codefile"><summary><span class="fname">src/lms/dao/ItemDAO.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.dao</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.exception.DataAccessException</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.*</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.sql.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.ArrayList</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.List</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * ItemDAO - Data Access Object for items (Week 11).</span>
+<span class="cm"> *</span>
+<span class="cm"> * A DAO hides ALL the SQL for one kind of thing. Nothing outside lms.dao</span>
+<span class="cm"> * writes SQL. It maps between rows and OBJECTS: the "type" column decides</span>
+<span class="cm"> * whether a row becomes a Book, a DVD or a Magazine.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ItemDAO</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">insert</span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"INSERT INTO items (id, type, title, detail) VALUES (?, ?, ?, ?)"</span><span class="p">;</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Database</span><span class="p">.</span><span class="na">getConnection</span><span class="p">();</span>
+<span class="w">             </span><span class="n">PreparedStatement</span><span class="w"> </span><span class="n">ps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">con</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="n">sql</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="na">getId</span><span class="p">());</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="na">getClass</span><span class="p">().</span><span class="na">getSimpleName</span><span class="p">());</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="na">getTitle</span><span class="p">());</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">detailOf</span><span class="p">(</span><span class="n">item</span><span class="p">));</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">executeUpdate</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SQLException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DataAccessException</span><span class="p">(</span><span class="s">"Could not save item "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">findAll</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"SELECT id, type, title, detail FROM items ORDER BY id"</span><span class="p">;</span>
+<span class="w">        </span><span class="n">List</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Database</span><span class="p">.</span><span class="na">getConnection</span><span class="p">();</span>
+<span class="w">             </span><span class="n">PreparedStatement</span><span class="w"> </span><span class="n">ps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">con</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="n">sql</span><span class="p">);</span>
+<span class="w">             </span><span class="n">ResultSet</span><span class="w"> </span><span class="n">rs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ps</span><span class="p">.</span><span class="na">executeQuery</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">rs</span><span class="p">.</span><span class="na">next</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">result</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">toItem</span><span class="p">(</span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="s">"id"</span><span class="p">),</span><span class="w"> </span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="s">"type"</span><span class="p">),</span>
+<span class="w">                        </span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="s">"title"</span><span class="p">),</span><span class="w"> </span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="s">"detail"</span><span class="p">)));</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SQLException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DataAccessException</span><span class="p">(</span><span class="s">"Could not read items"</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Row -&gt; object. This is the "factory" step. */</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">LibraryItem</span><span class="w"> </span><span class="nf">toItem</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">detail</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">type</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="s">"Book"</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Book</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">detail</span><span class="p">);</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="s">"DVD"</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DVD</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">Integer</span><span class="p">.</span><span class="na">parseInt</span><span class="p">(</span><span class="n">detail</span><span class="p">));</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="s">"Magazine"</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Magazine</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">Integer</span><span class="p">.</span><span class="na">parseInt</span><span class="p">(</span><span class="n">detail</span><span class="p">));</span>
+<span class="w">            </span><span class="k">default</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DataAccessException</span><span class="p">(</span><span class="s">"Unknown item type in database: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">);</span>
+<span class="w">        </span><span class="p">};</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Object -&gt; the single "detail" column. */</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">detailOf</span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">Book</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="na">getAuthor</span><span class="p">();</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">DVD</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">String</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="na">getDurationMinutes</span><span class="p">());</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">Magazine</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">String</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="na">getIssueNumber</span><span class="p">());</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s">""</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<details class="codefile"><summary><span class="fname">src/lms/dao/MemberDAO.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.dao</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.exception.DataAccessException</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Member</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Staff</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Student</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.sql.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.ArrayList</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.List</span><span class="p">;</span>
+
+<span class="cm">/** MemberDAO - all SQL for the members table (Week 11). */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">MemberDAO</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">insert</span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"INSERT INTO members (id, name, type) VALUES (?, ?, ?)"</span><span class="p">;</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Database</span><span class="p">.</span><span class="na">getConnection</span><span class="p">();</span>
+<span class="w">             </span><span class="n">PreparedStatement</span><span class="w"> </span><span class="n">ps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">con</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="n">sql</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">member</span><span class="p">.</span><span class="na">getMemberId</span><span class="p">());</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">member</span><span class="p">.</span><span class="na">getName</span><span class="p">());</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">member</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">Staff</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"STAFF"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s">"STUDENT"</span><span class="p">);</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">executeUpdate</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SQLException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DataAccessException</span><span class="p">(</span><span class="s">"Could not save member "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">member</span><span class="p">.</span><span class="na">getMemberId</span><span class="p">(),</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Member</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">findAll</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"SELECT id, name, type FROM members ORDER BY id"</span><span class="p">;</span>
+<span class="w">        </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Member</span><span class="o">&gt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Database</span><span class="p">.</span><span class="na">getConnection</span><span class="p">();</span>
+<span class="w">             </span><span class="n">PreparedStatement</span><span class="w"> </span><span class="n">ps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">con</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="n">sql</span><span class="p">);</span>
+<span class="w">             </span><span class="n">ResultSet</span><span class="w"> </span><span class="n">rs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ps</span><span class="p">.</span><span class="na">executeQuery</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">rs</span><span class="p">.</span><span class="na">next</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">String</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="s">"id"</span><span class="p">);</span>
+<span class="w">                </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="s">"name"</span><span class="p">);</span>
+<span class="w">                </span><span class="n">result</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">"STAFF"</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="s">"type"</span><span class="p">))</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Staff</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Student</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">));</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SQLException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DataAccessException</span><span class="p">(</span><span class="s">"Could not read members"</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<details class="codefile"><summary><span class="fname">src/lms/dao/LoanDAO.java</span><span class="fcap">Includes a three-table JOIN</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.dao</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.exception.DataAccessException</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.sql.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.time.LocalDateTime</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.ArrayList</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.List</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * LoanDAO - all SQL for the loans table (Week 11).</span>
+<span class="cm"> *</span>
+<span class="cm"> * A loan row with returned_at = NULL means "still on loan".</span>
+<span class="cm"> * There is no separate "is borrowed" column to keep in sync - the loans</span>
+<span class="cm"> * table IS the truth.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LoanDAO</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="cm">/** A small immutable data holder (a Java record). */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">record</span> <span class="nc">OpenLoan</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">memberId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">recordLoan</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">memberId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"INSERT INTO loans (item_id, member_id, borrowed_at) VALUES (?, ?, ?)"</span><span class="p">;</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Database</span><span class="p">.</span><span class="na">getConnection</span><span class="p">();</span>
+<span class="w">             </span><span class="n">PreparedStatement</span><span class="w"> </span><span class="n">ps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">con</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="n">sql</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">itemId</span><span class="p">);</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">memberId</span><span class="p">);</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">LocalDateTime</span><span class="p">.</span><span class="na">now</span><span class="p">().</span><span class="na">withNano</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="na">toString</span><span class="p">());</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">executeUpdate</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SQLException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DataAccessException</span><span class="p">(</span><span class="s">"Could not record the loan of "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">itemId</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">recordReturn</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"UPDATE loans SET returned_at = ? WHERE item_id = ? AND returned_at IS NULL"</span><span class="p">;</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Database</span><span class="p">.</span><span class="na">getConnection</span><span class="p">();</span>
+<span class="w">             </span><span class="n">PreparedStatement</span><span class="w"> </span><span class="n">ps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">con</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="n">sql</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">LocalDateTime</span><span class="p">.</span><span class="na">now</span><span class="p">().</span><span class="na">withNano</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="na">toString</span><span class="p">());</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">itemId</span><span class="p">);</span>
+<span class="w">            </span><span class="n">ps</span><span class="p">.</span><span class="na">executeUpdate</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SQLException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DataAccessException</span><span class="p">(</span><span class="s">"Could not record the return of "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">itemId</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Used at start-up to restore "who has what". */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">OpenLoan</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">findOpenLoans</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"SELECT item_id, member_id FROM loans WHERE returned_at IS NULL"</span><span class="p">;</span>
+<span class="w">        </span><span class="n">List</span><span class="o">&lt;</span><span class="n">OpenLoan</span><span class="o">&gt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Database</span><span class="p">.</span><span class="na">getConnection</span><span class="p">();</span>
+<span class="w">             </span><span class="n">PreparedStatement</span><span class="w"> </span><span class="n">ps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">con</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="n">sql</span><span class="p">);</span>
+<span class="w">             </span><span class="n">ResultSet</span><span class="w"> </span><span class="n">rs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ps</span><span class="p">.</span><span class="na">executeQuery</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">rs</span><span class="p">.</span><span class="na">next</span><span class="p">())</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">OpenLoan</span><span class="p">(</span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="mi">2</span><span class="p">)));</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SQLException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DataAccessException</span><span class="p">(</span><span class="s">"Could not read open loans"</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** A JOIN across three tables: rows of {borrowed, item title, member name, returned}. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">[]&gt;</span><span class="w"> </span><span class="nf">history</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"SELECT l.borrowed_at, i.title, m.name, l.returned_at "</span>
+<span class="w">                   </span><span class="o">+</span><span class="w"> </span><span class="s">"FROM loans l "</span>
+<span class="w">                   </span><span class="o">+</span><span class="w"> </span><span class="s">"JOIN items i ON i.id = l.item_id "</span>
+<span class="w">                   </span><span class="o">+</span><span class="w"> </span><span class="s">"JOIN members m ON m.id = l.member_id "</span>
+<span class="w">                   </span><span class="o">+</span><span class="w"> </span><span class="s">"ORDER BY l.borrowed_at DESC"</span><span class="p">;</span>
+<span class="w">        </span><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">[]&gt;</span><span class="w"> </span><span class="n">rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Database</span><span class="p">.</span><span class="na">getConnection</span><span class="p">();</span>
+<span class="w">             </span><span class="n">PreparedStatement</span><span class="w"> </span><span class="n">ps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">con</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="n">sql</span><span class="p">);</span>
+<span class="w">             </span><span class="n">ResultSet</span><span class="w"> </span><span class="n">rs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ps</span><span class="p">.</span><span class="na">executeQuery</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">rs</span><span class="p">.</span><span class="na">next</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">String</span><span class="w"> </span><span class="n">returned</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+<span class="w">                </span><span class="n">rows</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">String</span><span class="o">[]</span><span class="p">{</span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="na">replace</span><span class="p">(</span><span class="sc">'T'</span><span class="p">,</span><span class="w"> </span><span class="sc">' '</span><span class="p">),</span><span class="w"> </span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="n">rs</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+<span class="w">                        </span><span class="n">returned</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"(on loan)"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">returned</span><span class="p">.</span><span class="na">replace</span><span class="p">(</span><span class="sc">'T'</span><span class="p">,</span><span class="w"> </span><span class="sc">' '</span><span class="p">)});</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">SQLException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DataAccessException</span><span class="p">(</span><span class="s">"Could not read loan history"</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">rows</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="step-block"><h3>3. Test the DAOs from the console <em>before</em> the GUI</h3></div>
+<details class="codefile"><summary><span class="fname">src/lms/DaoDemo.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.dao.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.*</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * DaoDemo - test your DAOs from the console BEFORE touching the GUI.</span>
+<span class="cm"> * If a DAO is wrong, you want to find out here, not behind a button.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">DaoDemo</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Database</span><span class="p">.</span><span class="na">init</span><span class="p">();</span>
+<span class="w">        </span><span class="n">ItemDAO</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ItemDAO</span><span class="p">();</span>
+<span class="w">        </span><span class="n">MemberDAO</span><span class="w"> </span><span class="n">members</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MemberDAO</span><span class="p">();</span>
+<span class="w">        </span><span class="n">LoanDAO</span><span class="w"> </span><span class="n">loans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LoanDAO</span><span class="p">();</span>
+
+<span class="w">        </span><span class="n">items</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Book</span><span class="p">(</span><span class="s">"B100"</span><span class="p">,</span><span class="w"> </span><span class="s">"Head First Java"</span><span class="p">,</span><span class="w"> </span><span class="s">"Kathy Sierra"</span><span class="p">));</span>
+<span class="w">        </span><span class="n">items</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">DVD</span><span class="p">(</span><span class="s">"D100"</span><span class="p">,</span><span class="w"> </span><span class="s">"Databases 101"</span><span class="p">,</span><span class="w"> </span><span class="mi">90</span><span class="p">));</span>
+<span class="w">        </span><span class="n">members</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Student</span><span class="p">(</span><span class="s">"M100"</span><span class="p">,</span><span class="w"> </span><span class="s">"Amal Fernando"</span><span class="p">));</span>
+
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- items in the database ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">items</span><span class="p">.</span><span class="na">findAll</span><span class="p">().</span><span class="na">forEach</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">::</span><span class="n">println</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- members in the database ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">members</span><span class="p">.</span><span class="na">findAll</span><span class="p">().</span><span class="na">forEach</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">::</span><span class="n">println</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">loans</span><span class="p">.</span><span class="na">recordLoan</span><span class="p">(</span><span class="s">"B100"</span><span class="p">,</span><span class="w"> </span><span class="s">"M100"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- open loans ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">loans</span><span class="p">.</span><span class="na">findOpenLoans</span><span class="p">().</span><span class="na">forEach</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">::</span><span class="n">println</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">loans</span><span class="p">.</span><span class="na">recordReturn</span><span class="p">(</span><span class="s">"B100"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- open loans after return: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">loans</span><span class="p">.</span><span class="na">findOpenLoans</span><span class="p">().</span><span class="na">size</span><span class="p">());</span>
+
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- history (JOIN) ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">loans</span><span class="p">.</span><span class="na">history</span><span class="p">())</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">String</span><span class="p">.</span><span class="na">join</span><span class="p">(</span><span class="s">" | "</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">));</span>
+
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- foreign key check: loan for a member that does not exist ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">loans</span><span class="p">.</span><span class="na">recordLoan</span><span class="p">(</span><span class="s">"B100"</span><span class="p">,</span><span class="w"> </span><span class="s">"M999"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">lms</span><span class="p">.</span><span class="na">exception</span><span class="p">.</span><span class="na">DataAccessException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Rejected: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="cmd">java -cp &quot;out:lib/*&quot; lms.DaoDemo</div>
+<div class="out">--- items in the database ---
+Book{id=&#x27;B100&#x27;, title=&#x27;Head First Java&#x27;, borrowed=false}
+DVD{id=&#x27;D100&#x27;, title=&#x27;Databases 101&#x27;, borrowed=false}
+--- members in the database ---
+Student{id=&#x27;M100&#x27;, name=&#x27;Amal Fernando&#x27;, borrowedCount=0, limit=3}
+--- open loans ---
+OpenLoan[itemId=B100, memberId=M100]
+--- open loans after return: 0
+--- history (JOIN) ---
+2026-10-13 00:51:57 | Head First Java | Amal Fernando | 2026-10-13 00:51:57
+--- foreign key check: loan for a member that does not exist ---
+Rejected: Could not record the loan of B100</div>
+<div class="step-block"><p>The last line is the <strong>foreign key</strong> doing its job: a loan for member <code>M999</code> is refused.</p>
+<h3>4. Plug the DAOs into the controller</h3>
+<p>Order matters. <em>Validate by constructing → save to the database → then change memory.</em> For borrowing: rules first, then the database, and <strong>undo</strong> if the database fails.</p></div>
+<details class="codefile"><summary><span class="fname">src/lms/service/LibraryController.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.service</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.dao.ItemDAO</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.dao.LoanDAO</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.dao.MemberDAO</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.exception.ItemNotAvailableException</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.*</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.List</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * LibraryController - the C in MVC (Week 9); now also talks to the DAOs (Week 11).</span>
+<span class="cm"> *</span>
+<span class="cm"> *   Model      = lms.model + Library   (data and rules; knows nothing about windows)</span>
+<span class="cm"> *   View       = lms.ui.MainFrame      (windows; knows nothing about the rules)</span>
+<span class="cm"> *   Controller = this class            (receives what the user typed, calls the model)</span>
+<span class="cm"> *</span>
+<span class="cm"> * The view never touches Book/DVD/Library directly. It asks the controller.</span>
+<span class="cm"> * That is what lets us swap the console for Swing - and later swap the</span>
+<span class="cm"> * in-memory list for a database - without rewriting the other layers.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LibraryController</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Library</span><span class="w"> </span><span class="n">library</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ItemDAO</span><span class="w"> </span><span class="n">itemDAO</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">MemberDAO</span><span class="w"> </span><span class="n">memberDAO</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">LoanDAO</span><span class="w"> </span><span class="n">loanDAO</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">LibraryController</span><span class="p">(</span><span class="n">Library</span><span class="w"> </span><span class="n">library</span><span class="p">,</span><span class="w"> </span><span class="n">ItemDAO</span><span class="w"> </span><span class="n">itemDAO</span><span class="p">,</span><span class="w"> </span><span class="n">MemberDAO</span><span class="w"> </span><span class="n">memberDAO</span><span class="p">,</span><span class="w"> </span><span class="n">LoanDAO</span><span class="w"> </span><span class="n">loanDAO</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">library</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">library</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">itemDAO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">itemDAO</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">memberDAO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">memberDAO</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">loanDAO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">loanDAO</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Start-up: rebuild the in-memory model from the database. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">loadFromDatabase</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">itemDAO</span><span class="p">.</span><span class="na">findAll</span><span class="p">())</span><span class="w"> </span><span class="n">library</span><span class="p">.</span><span class="na">addItem</span><span class="p">(</span><span class="n">item</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">memberDAO</span><span class="p">.</span><span class="na">findAll</span><span class="p">())</span><span class="w"> </span><span class="n">library</span><span class="p">.</span><span class="na">addMember</span><span class="p">(</span><span class="n">m</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">LoanDAO</span><span class="p">.</span><span class="na">OpenLoan</span><span class="w"> </span><span class="n">loan</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">loanDAO</span><span class="p">.</span><span class="na">findOpenLoans</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">library</span><span class="p">.</span><span class="na">borrowItem</span><span class="p">(</span><span class="n">loan</span><span class="p">.</span><span class="na">itemId</span><span class="p">(),</span><span class="w"> </span><span class="n">loan</span><span class="p">.</span><span class="na">memberId</span><span class="p">());</span><span class="w">   </span><span class="c1">// replays the loan through the model's rules</span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">ItemNotAvailableException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalStateException</span><span class="p">(</span><span class="s">"Database holds an impossible loan: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">loan</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Order matters: validate (construct) -&gt; save to DB -&gt; add to memory. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addItem</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">detail</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">library</span><span class="p">.</span><span class="na">hasItem</span><span class="p">(</span><span class="n">id</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">"An item with id '"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"' already exists"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">type</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="s">"Book"</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Book</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">detail</span><span class="p">);</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="s">"DVD"</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DVD</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">parseWholeNumber</span><span class="p">(</span><span class="n">detail</span><span class="p">,</span><span class="w"> </span><span class="s">"Duration"</span><span class="p">));</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="s">"Magazine"</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Magazine</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">parseWholeNumber</span><span class="p">(</span><span class="n">detail</span><span class="p">,</span><span class="w"> </span><span class="s">"Issue number"</span><span class="p">));</span>
+<span class="w">            </span><span class="k">default</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">"Unknown item type: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">type</span><span class="p">);</span>
+<span class="w">        </span><span class="p">};</span>
+<span class="w">        </span><span class="n">itemDAO</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="n">item</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">addItem</span><span class="p">(</span><span class="n">item</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addMember</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">library</span><span class="p">.</span><span class="na">getMembers</span><span class="p">().</span><span class="na">stream</span><span class="p">().</span><span class="na">anyMatch</span><span class="p">(</span><span class="n">m</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="na">getMemberId</span><span class="p">().</span><span class="na">equals</span><span class="p">(</span><span class="n">id</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">"A member with id '"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"' already exists"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Staff"</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">type</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Staff</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Student</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span>
+<span class="w">        </span><span class="n">memberDAO</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="n">member</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">addMember</span><span class="p">(</span><span class="n">member</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">borrow</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">memberId</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">ItemNotAvailableException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">borrowItem</span><span class="p">(</span><span class="n">itemId</span><span class="p">,</span><span class="w"> </span><span class="n">memberId</span><span class="p">);</span><span class="w">          </span><span class="c1">// rules first</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">loanDAO</span><span class="p">.</span><span class="na">recordLoan</span><span class="p">(</span><span class="n">itemId</span><span class="p">,</span><span class="w"> </span><span class="n">memberId</span><span class="p">);</span><span class="w">      </span><span class="c1">// then persist</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RuntimeException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">library</span><span class="p">.</span><span class="na">returnItem</span><span class="p">(</span><span class="n">itemId</span><span class="p">);</span><span class="w">                </span><span class="c1">// undo the in-memory change</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="n">e</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">giveBack</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">ItemNotAvailableException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">returnItem</span><span class="p">(</span><span class="n">itemId</span><span class="p">);</span>
+<span class="w">        </span><span class="n">loanDAO</span><span class="p">.</span><span class="na">recordReturn</span><span class="p">(</span><span class="n">itemId</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">[]&gt;</span><span class="w"> </span><span class="nf">loanHistory</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">loanDAO</span><span class="p">.</span><span class="na">history</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getItems</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">library</span><span class="p">.</span><span class="na">getItems</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** An empty search box means "show everything". */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="na">isBlank</span><span class="p">())</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">library</span><span class="p">.</span><span class="na">getItems</span><span class="p">()</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">library</span><span class="p">.</span><span class="na">search</span><span class="p">(</span><span class="n">text</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Plain-text report for a dialog. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">loanReport</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">var</span><span class="w"> </span><span class="n">counts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">library</span><span class="p">.</span><span class="na">loansPerMember</span><span class="p">();</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">counts</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s">"No items are currently on loan."</span><span class="p">;</span>
+<span class="w">        </span><span class="n">StringBuilder</span><span class="w"> </span><span class="n">sb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StringBuilder</span><span class="p">(</span><span class="s">"Items currently on loan:\n"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">counts</span><span class="p">.</span><span class="na">forEach</span><span class="p">((</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">sb</span><span class="p">.</span><span class="na">append</span><span class="p">(</span><span class="s">"  "</span><span class="p">).</span><span class="na">append</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="na">append</span><span class="p">(</span><span class="s">": "</span><span class="p">).</span><span class="na">append</span><span class="p">(</span><span class="n">n</span><span class="p">).</span><span class="na">append</span><span class="p">(</span><span class="sc">'\n'</span><span class="p">));</span>
+<span class="w">        </span><span class="n">sb</span><span class="p">.</span><span class="na">append</span><span class="p">(</span><span class="s">"\nAvailable: "</span><span class="p">).</span><span class="na">append</span><span class="p">(</span><span class="n">library</span><span class="p">.</span><span class="na">availableItems</span><span class="p">().</span><span class="na">size</span><span class="p">());</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">sb</span><span class="p">.</span><span class="na">toString</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Member</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getMembers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">library</span><span class="p">.</span><span class="na">getMembers</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">parseWholeNumber</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">label</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">Integer</span><span class="p">.</span><span class="na">parseInt</span><span class="p">(</span><span class="n">text</span><span class="p">.</span><span class="na">trim</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">NumberFormatException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" must be a whole number"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<details class="codefile"><summary><span class="fname">src/lms/GuiMain.java</span><span class="fcap">Start-up: init, seed only if empty, load, show</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.dao.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.service.Library</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.service.LibraryController</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.ui.MainFrame</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">javax.swing.*</span><span class="p">;</span>
+
+<span class="cm">/** Week 11 start-up: database -&gt; model -&gt; controller -&gt; view. */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">GuiMain</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Database</span><span class="p">.</span><span class="na">init</span><span class="p">();</span><span class="w">                                  </span><span class="c1">// create tables if needed</span>
+
+<span class="w">        </span><span class="n">ItemDAO</span><span class="w"> </span><span class="n">itemDAO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ItemDAO</span><span class="p">();</span>
+<span class="w">        </span><span class="n">MemberDAO</span><span class="w"> </span><span class="n">memberDAO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MemberDAO</span><span class="p">();</span>
+<span class="w">        </span><span class="n">LoanDAO</span><span class="w"> </span><span class="n">loanDAO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LoanDAO</span><span class="p">();</span>
+<span class="w">        </span><span class="n">seedIfEmpty</span><span class="p">(</span><span class="n">itemDAO</span><span class="p">,</span><span class="w"> </span><span class="n">memberDAO</span><span class="p">);</span><span class="w">                  </span><span class="c1">// first run only</span>
+
+<span class="w">        </span><span class="n">Library</span><span class="w"> </span><span class="n">library</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Library</span><span class="p">();</span><span class="w">                  </span><span class="c1">// MODEL</span>
+<span class="w">        </span><span class="n">LibraryController</span><span class="w"> </span><span class="n">controller</span><span class="w"> </span><span class="o">=</span><span class="w">                    </span><span class="c1">// CONTROLLER</span>
+<span class="w">                </span><span class="k">new</span><span class="w"> </span><span class="n">LibraryController</span><span class="p">(</span><span class="n">library</span><span class="p">,</span><span class="w"> </span><span class="n">itemDAO</span><span class="p">,</span><span class="w"> </span><span class="n">memberDAO</span><span class="p">,</span><span class="w"> </span><span class="n">loanDAO</span><span class="p">);</span>
+<span class="w">        </span><span class="n">controller</span><span class="p">.</span><span class="na">loadFromDatabase</span><span class="p">();</span>
+
+<span class="w">        </span><span class="n">SwingUtilities</span><span class="p">.</span><span class="na">invokeLater</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MainFrame</span><span class="p">(</span><span class="n">controller</span><span class="p">).</span><span class="na">setVisible</span><span class="p">(</span><span class="kc">true</span><span class="p">));</span><span class="w">   </span><span class="c1">// VIEW</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">seedIfEmpty</span><span class="p">(</span><span class="n">ItemDAO</span><span class="w"> </span><span class="n">itemDAO</span><span class="p">,</span><span class="w"> </span><span class="n">MemberDAO</span><span class="w"> </span><span class="n">memberDAO</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">itemDAO</span><span class="p">.</span><span class="na">findAll</span><span class="p">().</span><span class="na">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">itemDAO</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Book</span><span class="p">(</span><span class="s">"B001"</span><span class="p">,</span><span class="w"> </span><span class="s">"Clean Code"</span><span class="p">,</span><span class="w"> </span><span class="s">"Robert C. Martin"</span><span class="p">));</span>
+<span class="w">            </span><span class="n">itemDAO</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Book</span><span class="p">(</span><span class="s">"B002"</span><span class="p">,</span><span class="w"> </span><span class="s">"Refactoring"</span><span class="p">,</span><span class="w"> </span><span class="s">"Martin Fowler"</span><span class="p">));</span>
+<span class="w">            </span><span class="n">itemDAO</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">DVD</span><span class="p">(</span><span class="s">"D001"</span><span class="p">,</span><span class="w"> </span><span class="s">"Introduction to Algorithms"</span><span class="p">,</span><span class="w"> </span><span class="mi">120</span><span class="p">));</span>
+<span class="w">            </span><span class="n">itemDAO</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Magazine</span><span class="p">(</span><span class="s">"G001"</span><span class="p">,</span><span class="w"> </span><span class="s">"Software Weekly"</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p">));</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">memberDAO</span><span class="p">.</span><span class="na">findAll</span><span class="p">().</span><span class="na">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">memberDAO</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Student</span><span class="p">(</span><span class="s">"M001"</span><span class="p">,</span><span class="w"> </span><span class="s">"Nadeesha Perera"</span><span class="p">));</span>
+<span class="w">            </span><span class="n">memberDAO</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Staff</span><span class="p">(</span><span class="s">"M002"</span><span class="p">,</span><span class="w"> </span><span class="s">"Mr. Kasun Silva"</span><span class="p">));</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="step-block"><h3>5. Run it twice</h3></div>
+<div class="cmd">mkdir -p out
+javac -d out $(find src -name &quot;*.java&quot;)
+java -cp &quot;out:lib/*&quot; lms.GuiMain      # use ; instead of : on Windows</div>
+<figure><img src="img/w11-history.png" alt="Borrow some items and press Loan History (the JOIN)"/><figcaption>Borrow some items and press Loan History (the JOIN)</figcaption></figure>
+<figure><img src="img/w11-restart.png" alt="Close and reopen: the loans are still there"/><figcaption>Close and reopen: the loans are still there</figcaption></figure>
+<div class="step-block"><h3>Debugging JDBC</h3>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Cause</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>No suitable driver found</code></td>
+<td>Driver jar not on the classpath</td>
+</tr>
+<tr>
+<td><code>no such table: items</code></td>
+<td><code>Database.init()</code> not called first</td>
+</tr>
+<tr>
+<td><code>FOREIGN KEY constraint failed</code></td>
+<td>Insert items/members before loans</td>
+</tr>
+<tr>
+<td><code>database is locked</code></td>
+<td>Another program has <code>lms.db</code> open</td>
+</tr>
+</tbody>
+</table></div>
+<div class="step-block"><h3>Checkpoint: is it done?</h3><ul class="checklist"><li><code>lms.db</code> is created and is <strong>not</strong> in <code>git status</code></li><li>Items, members and open loans survive a restart</li><li>No SQL or <code>java.sql</code> import anywhere outside <code>lms.dao</code></li><li>ER diagram committed; PR: <em>Week 11: JDBC Database Connectivity</em></li></ul></div><div class="pager"><a href="step07_generics_streams.html"><button class="btn btn-secondary">← Step 07: Generics, Collections & Streams</button></a><a href="step09_threads_final.html"><button class="btn btn-primary">Step 09: Threads & Shipping v1.0 →</button></a></div></div></main></div>
+<footer><p class="footer-title">SENG 12233 — Object-Oriented Programming</p><p class="footer-sub">Library Management System guide · University of Kelaniya</p>
+<div class="footer-links"><a href="index.html">Guide overview</a><a href="../index.html">Course page</a></div>
+<p class="footer-copy">© SENG 12233 · Software Engineering Teaching Unit · Faculty of Science · University of Kelaniya</p></footer>
+<script>
+const scrollBar=document.getElementById('scrollBar');
+window.addEventListener('scroll',()=>{const t=document.documentElement.scrollHeight-window.innerHeight;scrollBar.style.width=(window.scrollY/t*100)+'%';},{passive:true});
+const nav=document.getElementById('mainNav');
+window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',window.scrollY>40);},{passive:true});
+const obs=new IntersectionObserver((es)=>{es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('visible'),i*55);obs.unobserve(e.target);}});},{threshold:0.05,rootMargin:'0px 0px -30px 0px'});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+const mb=document.querySelector('.mobile-menu-btn'),nl=document.querySelector('.nav-links');
+if(mb)mb.addEventListener('click',()=>{const o=nl.style.display==='flex';nl.style.cssText=o?'':'display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:#f8f8f8;padding:1rem 1.5rem;gap:1rem;border-bottom:1px solid #e8e8e6;';});
+</script></body></html>

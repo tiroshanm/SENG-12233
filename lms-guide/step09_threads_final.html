@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Step 09: Threads &amp; Shipping v1.0 · SENG 12233 LMS Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+            --white: #ffffff;
+            --off-white: #f8f8f8;
+            --cream: #f5f5f5;
+            --light-gray: #e8e8e6;
+            --medium-gray: #999999;
+            --dark-gray: #4a4a4a;
+            --charcoal: #2a2a2a;
+            --black: #1a1a1a;
+            --accent: #8b7355;
+            --accent-light: #c4b5a0;
+            --accent-pale: #e8dfd4;
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-sans: 'Source Sans 3', -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--off-white);
+            color: var(--charcoal);
+            line-height: 1.7;
+            font-weight: 300;
+            overflow-x: hidden;
+        }
+
+        ::selection { background: var(--accent-light); color: var(--black); }
+        a { text-decoration: none; color: inherit; }
+        button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+        /* ── Scroll Progress ── */
+        .scroll-progress {
+            position: fixed; top: 0; left: 0;
+            height: 2px; background: var(--accent);
+            z-index: 1001; transition: width 0.1s ease;
+        }
+
+        /* ── Navigation ── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            padding: 1.2rem 4rem;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(248, 248, 248, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid transparent;
+            transition: all 0.4s ease;
+        }
+        nav.scrolled { border-bottom: 1px solid var(--light-gray); padding: 0.8rem 4rem; }
+        .nav-left { display: flex; align-items: center; gap: 2rem; }
+        .nav-logo { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 400; letter-spacing: 0.02em; color: var(--black); }
+        .nav-logo span { color: var(--accent); }
+        .nav-back { font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--medium-gray); transition: color 0.3s ease; display: flex; align-items: center; gap: 0.4rem; }
+        .nav-back:hover { color: var(--accent); }
+        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+        .nav-links a { font-size: 0.8rem; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dark-gray); position: relative; transition: color 0.3s ease; }
+        .nav-links a::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1px; background: var(--accent); transition: width 0.3s ease; }
+        .nav-links a:hover { color: var(--black); }
+        .nav-links a:hover::after { width: 100%; }
+        .nav-links a.active { color: var(--accent); }
+        .nav-links a.active::after { width: 100%; }
+        .mobile-menu-btn { display: none; padding: 0.5rem; }
+        .mobile-menu-btn span { display: block; width: 22px; height: 1.5px; background: var(--black); margin: 5px 0; transition: all 0.3s ease; }
+
+        /* ── Hero ── */
+        .hero {
+            padding: 10rem 4rem 4rem; text-align: center; position: relative;
+            background: linear-gradient(180deg, #f8f8f8 0%, #f2f2f2 100%);
+        }
+        .hero::before {
+            content: ''; position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 400px;
+            background: radial-gradient(circle, var(--accent-light) 0%, transparent 70%);
+            opacity: 0.12; filter: blur(80px);
+        }
+        .hero-label { font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; font-weight: 500; }
+        .hero h1 { font-family: var(--font-serif); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 300; line-height: 1.15; color: var(--black); margin-bottom: 1rem; letter-spacing: -0.02em; }
+        .hero h1 em { font-style: italic; color: var(--accent); }
+        .hero-description { font-size: 1.05rem; color: var(--dark-gray); max-width: 600px; margin: 0 auto 2rem; line-height: 1.8; }
+        .hero-meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; }
+        .meta-tag { padding: 0.45rem 1rem; background: rgba(255,255,255,0.8); border: 1px solid var(--light-gray); font-size: 0.72rem; letter-spacing: 0.05em; color: var(--dark-gray); transition: all 0.3s ease; }
+        .meta-tag:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Progress Bar ── */
+        .progress-section { max-width: 600px; margin: 2rem auto 0; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--medium-gray); margin-bottom: 0.5rem; }
+        .progress-label-value { color: var(--accent); font-weight: 500; }
+        .progress-bar { width: 100%; height: 3px; background: var(--light-gray); overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); transition: width 0.8s ease; }
+
+        /* ── Module Band ── */
+        .module-band {
+            background: var(--black);
+            padding: 0.75rem 4rem;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 0.5rem;
+        }
+        .module-band-left { font-size: 0.72rem; letter-spacing: 0.06em; color: var(--medium-gray); }
+        .module-band-left strong { color: var(--accent); font-weight: 500; }
+        .module-band-right { display: flex; gap: 1.5rem; }
+        .module-band-right a { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.4); transition: color 0.3s; }
+        .module-band-right a:hover { color: var(--white); }
+
+        /* ── Layout ── */
+        .layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; max-width: 1400px; margin: 0 auto; }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            padding: 2rem 1.5rem; border-right: 1px solid var(--light-gray);
+            position: sticky; top: 60px; height: calc(100vh - 60px);
+            overflow-y: auto; background: var(--off-white);
+        }
+        .sidebar::-webkit-scrollbar { width: 3px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--light-gray); }
+        .sidebar-title { font-family: var(--font-serif); font-size: 1rem; font-weight: 400; color: var(--black); margin-bottom: 0.3rem; }
+        .sidebar-desc { font-size: 0.75rem; color: var(--medium-gray); margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--light-gray); line-height: 1.5; }
+        .sidebar-section { margin-bottom: 1.5rem; }
+        .sidebar-section-label { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 500; }
+        .sidebar-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; font-size: 0.78rem; color: var(--dark-gray); cursor: pointer; transition: color 0.2s ease; }
+        .sidebar-item:hover { color: var(--accent); }
+        .sidebar-check { font-size: 0.65rem; color: var(--accent); min-width: 14px; }
+        .sidebar-lock { font-size: 0.65rem; color: var(--light-gray); min-width: 14px; }
+        .sidebar-nav-links { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--light-gray); }
+        .sidebar-nav-link { display: block; padding: 0.4rem 0; font-size: 0.8rem; color: var(--dark-gray); transition: color 0.2s ease; }
+        .sidebar-nav-link:hover { color: var(--accent); }
+        .sidebar-nav-link.active { color: var(--accent); font-weight: 500; }
+
+        /* ── Main Content ── */
+        .main-content { padding: 2.5rem 3rem; min-height: 100vh; }
+
+        /* ── Section Headers ── */
+        .section-header { margin-bottom: 1.5rem; }
+        .section-label { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem; font-weight: 500; }
+        .section-title { font-family: var(--font-serif); font-size: clamp(1.4rem, 2.5vw, 1.8rem); font-weight: 300; color: var(--black); letter-spacing: -0.01em; }
+
+        /* ── Overview Card ── */
+        .overview-card { background: #f2f2f2; padding: 1.5rem; margin-bottom: 2.5rem; border-left: 3px solid var(--accent); }
+        .overview-card p { font-size: 0.9rem; color: var(--dark-gray); line-height: 1.7; margin-bottom: 0.5rem; }
+        .overview-card p:last-child { margin-bottom: 0; }
+        .overview-card strong { color: var(--black); font-weight: 500; }
+
+        /* ── Part Divider ── */
+        .part-divider { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; margin: 2.5rem 0 1.5rem; border-bottom: 1px solid var(--light-gray); }
+        .part-divider-num { font-family: var(--font-serif); font-size: 2rem; font-weight: 300; color: var(--accent-light); font-style: italic; line-height: 1; }
+        .part-divider-content h3 { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 400; color: var(--black); }
+        .part-divider-content p { font-size: 0.72rem; color: var(--medium-gray); letter-spacing: 0.03em; }
+
+        /* ── Lectures Grid ── */
+        .lectures-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.2rem; margin-bottom: 1.5rem; }
+
+        /* ── Lecture Card ── */
+        .lecture-card { background: var(--white); border: 1px solid var(--light-gray); transition: all 0.4s ease; position: relative; overflow: hidden; }
+        .lecture-card::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 0; background: var(--accent); transition: height 0.4s ease; }
+        .lecture-card:hover { border-color: var(--accent-light); box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+        .lecture-card:hover::before { height: 100%; }
+        .lecture-card-header { padding: 1.2rem 1.5rem 0.8rem; display: flex; justify-content: space-between; align-items: flex-start; }
+        .lecture-num { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 300; color: var(--light-gray); line-height: 1; font-style: italic; transition: color 0.3s ease; }
+        .lecture-card:hover .lecture-num { color: var(--accent-light); }
+        .lecture-title { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 400; color: var(--black); line-height: 1.35; margin-bottom: 0.2rem; }
+        .lecture-subtitle { font-size: 0.78rem; color: var(--medium-gray); }
+        .lecture-ref { font-size: 0.68rem; color: var(--accent); margin-top: 0.3rem; letter-spacing: 0.03em; }
+        .lecture-card-body { padding: 0 1.5rem 1.2rem; }
+        .topics-list { list-style: none; margin-bottom: 1rem; }
+        .topics-list li { padding: 0.3rem 0 0.3rem 1.2rem; position: relative; font-size: 0.82rem; color: var(--dark-gray); border-bottom: 1px solid #fafafa; line-height: 1.5; }
+        .topics-list li:last-child { border-bottom: none; }
+        .topics-list li::before { content: '→'; position: absolute; left: 0; color: var(--accent-light); font-size: 0.72rem; }
+        .lecture-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+        /* ── Buttons ── */
+        .btn { padding: 0.45rem 1rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.4rem; }
+        .btn-primary { background: var(--accent); color: var(--white); }
+        .btn-primary:hover { background: var(--charcoal); }
+        .btn-secondary { background: transparent; color: var(--dark-gray); border: 1px solid var(--light-gray); }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Assessments ── */
+        .assessments-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.2rem; margin-top: 1.5rem; }
+        .assessment-card { background: var(--white); border: 1px solid var(--light-gray); padding: 1.5rem; transition: all 0.4s ease; position: relative; overflow: hidden; }
+        .assessment-card::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 0; background: var(--accent); transition: height 0.4s ease; }
+        .assessment-card:hover { border-color: var(--accent-light); box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+        .assessment-card:hover::before { height: 100%; }
+        .assessment-type { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 500; }
+        .assessment-title { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 400; color: var(--black); margin-bottom: 0.4rem; line-height: 1.3; }
+        .assessment-meta { font-size: 0.78rem; color: var(--medium-gray); margin-bottom: 0.8rem; }
+        .assessment-desc { font-size: 0.83rem; color: var(--dark-gray); line-height: 1.65; margin-bottom: 1rem; }
+        .assessment-tasks { list-style: none; margin-bottom: 1rem; }
+        .assessment-tasks li { padding: 0.3rem 0 0.3rem 1.2rem; position: relative; font-size: 0.8rem; color: var(--dark-gray); border-bottom: 1px solid #fafafa; }
+        .assessment-tasks li:last-child { border-bottom: none; }
+        .assessment-tasks li::before { content: '→'; position: absolute; left: 0; color: var(--accent-light); font-size: 0.72rem; }
+        .assessment-weight { display: inline-block; padding: 0.3rem 0.8rem; background: var(--accent-pale); color: var(--accent); font-size: 0.7rem; letter-spacing: 0.05em; font-weight: 500; }
+
+        /* ── Resources Section ── */
+        .resources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+        .resource-card { padding: 1.5rem; background: #f2f2f2; text-align: center; transition: all 0.3s ease; }
+        .resource-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
+        .resource-icon { font-size: 1.5rem; margin-bottom: 0.6rem; }
+        .resource-card h3 { font-family: var(--font-serif); font-size: 0.95rem; font-weight: 400; color: var(--black); margin-bottom: 0.25rem; }
+        .resource-card h3 a { color: inherit; transition: color 0.3s; }
+        .resource-card h3 a:hover { color: var(--accent); }
+        .resource-card p { font-size: 0.72rem; color: var(--medium-gray); }
+
+        /* ── Learning Path ── */
+        .learning-path { margin-top: 1.5rem; }
+        .path-item { display: flex; gap: 1rem; padding: 0.8rem 0; border-bottom: 1px solid var(--light-gray); }
+        .path-item:last-child { border-bottom: none; }
+        .path-phase { font-family: var(--font-serif); font-size: 0.9rem; font-style: italic; color: var(--accent); min-width: 60px; }
+        .path-desc { font-size: 0.85rem; color: var(--dark-gray); line-height: 1.6; }
+        .path-desc strong { color: var(--black); font-weight: 500; }
+
+        /* ── Course Structure ── */
+        .course-structure { margin-top: 2rem; padding: 1.5rem; background: #f2f2f2; border-left: 3px solid var(--accent); }
+        .course-structure p { font-size: 0.85rem; color: var(--dark-gray); margin-bottom: 0.5rem; line-height: 1.7; }
+        .course-structure p:last-child { margin-bottom: 0; }
+        .course-structure strong { color: var(--black); font-weight: 500; }
+
+        /* ── Footer ── */
+        footer { background: var(--black); color: var(--white); text-align: center; padding: 2.5rem 4rem; }
+        .footer-title { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 400; margin-bottom: 0.3rem; }
+        .footer-sub { font-size: 0.72rem; color: var(--medium-gray); margin-bottom: 1rem; }
+        .footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
+        .footer-links a { font-size: 0.75rem; color: var(--medium-gray); letter-spacing: 0.04em; transition: color 0.3s ease; }
+        .footer-links a:hover { color: var(--white); }
+        .footer-copy { font-size: 0.65rem; color: var(--medium-gray); margin-top: 1.2rem; opacity: 0.6; }
+
+        /* ── Animations ── */
+        .fade-in { opacity: 0; transform: translateY(12px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+        /* ── Responsive ── */
+        @media (max-width: 1024px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .main-content { padding: 2rem; }
+        }
+        @media (max-width: 768px) {
+            nav { padding: 1rem 1.5rem; }
+            .nav-links { display: none; }
+            .mobile-menu-btn { display: block; }
+            .hero { padding: 8rem 1.5rem 3rem; }
+            .main-content { padding: 1.5rem; }
+            .lectures-grid { grid-template-columns: 1fr; }
+            .assessments-grid { grid-template-columns: 1fr; }
+            .hero-meta { flex-direction: column; align-items: center; }
+            .resources-grid { grid-template-columns: 1fr 1fr; }
+            .module-band { padding: 0.75rem 1.5rem; }
+            footer { padding: 2rem 1.5rem; }
+        }
+        @media (max-width: 480px) { .resources-grid { grid-template-columns: 1fr; } }
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.hl .hll { background-color: #49483e }
+.hl { background: #272822; color: #F8F8F2 }
+.hl .c { color: #959077 } /* Comment */
+.hl .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.hl .esc { color: #F8F8F2 } /* Escape */
+.hl .g { color: #F8F8F2 } /* Generic */
+.hl .k { color: #66D9EF } /* Keyword */
+.hl .l { color: #AE81FF } /* Literal */
+.hl .n { color: #F8F8F2 } /* Name */
+.hl .o { color: #FF4689 } /* Operator */
+.hl .x { color: #F8F8F2 } /* Other */
+.hl .p { color: #F8F8F2 } /* Punctuation */
+.hl .ch { color: #959077 } /* Comment.Hashbang */
+.hl .cm { color: #959077 } /* Comment.Multiline */
+.hl .cp { color: #959077 } /* Comment.Preproc */
+.hl .cpf { color: #959077 } /* Comment.PreprocFile */
+.hl .c1 { color: #959077 } /* Comment.Single */
+.hl .cs { color: #959077 } /* Comment.Special */
+.hl .gd { color: #FF4689 } /* Generic.Deleted */
+.hl .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.hl .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.hl .gr { color: #FF4689 } /* Generic.Error */
+.hl .gh { color: #F8F8F2 } /* Generic.Heading */
+.hl .gi { color: #A6E22E } /* Generic.Inserted */
+.hl .go { color: #66D9EF } /* Generic.Output */
+.hl .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.hl .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.hl .gu { color: #959077 } /* Generic.Subheading */
+.hl .gt { color: #66D9EF } /* Generic.Traceback */
+.hl .kc { color: #66D9EF } /* Keyword.Constant */
+.hl .kd { color: #66D9EF } /* Keyword.Declaration */
+.hl .kn { color: #FF4689 } /* Keyword.Namespace */
+.hl .kp { color: #66D9EF } /* Keyword.Pseudo */
+.hl .kr { color: #66D9EF } /* Keyword.Reserved */
+.hl .kt { color: #66D9EF } /* Keyword.Type */
+.hl .ld { color: #E6DB74 } /* Literal.Date */
+.hl .m { color: #AE81FF } /* Literal.Number */
+.hl .s { color: #E6DB74 } /* Literal.String */
+.hl .na { color: #A6E22E } /* Name.Attribute */
+.hl .nb { color: #A6E22E } /* Name.Builtin */
+.hl .nc { color: #A6E22E } /* Name.Class */
+.hl .no { color: #66D9EF } /* Name.Constant */
+.hl .nd { color: #A6E22E } /* Name.Decorator */
+.hl .ni { color: #F8F8F2 } /* Name.Entity */
+.hl .ne { color: #A6E22E } /* Name.Exception */
+.hl .nf { color: #A6E22E } /* Name.Function */
+.hl .nl { color: #F8F8F2 } /* Name.Label */
+.hl .nn { color: #F8F8F2 } /* Name.Namespace */
+.hl .nx { color: #A6E22E } /* Name.Other */
+.hl .py { color: #F8F8F2 } /* Name.Property */
+.hl .nt { color: #FF4689 } /* Name.Tag */
+.hl .nv { color: #F8F8F2 } /* Name.Variable */
+.hl .ow { color: #FF4689 } /* Operator.Word */
+.hl .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.hl .w { color: #F8F8F2 } /* Text.Whitespace */
+.hl .mb { color: #AE81FF } /* Literal.Number.Bin */
+.hl .mf { color: #AE81FF } /* Literal.Number.Float */
+.hl .mh { color: #AE81FF } /* Literal.Number.Hex */
+.hl .mi { color: #AE81FF } /* Literal.Number.Integer */
+.hl .mo { color: #AE81FF } /* Literal.Number.Oct */
+.hl .sa { color: #E6DB74 } /* Literal.String.Affix */
+.hl .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.hl .sc { color: #E6DB74 } /* Literal.String.Char */
+.hl .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.hl .sd { color: #E6DB74 } /* Literal.String.Doc */
+.hl .s2 { color: #E6DB74 } /* Literal.String.Double */
+.hl .se { color: #AE81FF } /* Literal.String.Escape */
+.hl .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.hl .si { color: #E6DB74 } /* Literal.String.Interpol */
+.hl .sx { color: #E6DB74 } /* Literal.String.Other */
+.hl .sr { color: #E6DB74 } /* Literal.String.Regex */
+.hl .s1 { color: #E6DB74 } /* Literal.String.Single */
+.hl .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.hl .bp { color: #A6E22E } /* Name.Builtin.Pseudo */
+.hl .fm { color: #A6E22E } /* Name.Function.Magic */
+.hl .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.hl .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.hl .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.hl .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.hl .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.hl { background:#1e1e1e !important; }
+.guide-intro { max-width: 860px; }
+.step-block { margin: 1.4rem 0; }
+.step-block p { font-size: 0.92rem; color: var(--dark-gray); line-height: 1.75; margin-bottom: .7rem; }
+.step-block h3 { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 400; color: var(--black); margin: 2rem 0 .6rem; }
+.step-block h4 { font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 1.2rem 0 .4rem; font-weight: 500; }
+.step-block ul, .step-block ol { margin: 0 0 .9rem 1.3rem; font-size: .9rem; color: var(--dark-gray); }
+.step-block li { margin: .25rem 0; line-height: 1.65; }
+.step-block code, .callout code { font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size: .8em; background: #efece6; padding: .05rem .3rem; }
+.step-block strong { color: var(--black); font-weight: 500; }
+.step-block table { border-collapse: collapse; width: 100%; font-size: .82rem; margin: .8rem 0 1.2rem; }
+.step-block th { background: var(--accent-pale); text-align: left; padding: .45rem .7rem; font-weight: 500; }
+.step-block td { padding: .4rem .7rem; border-bottom: 1px solid var(--light-gray); vertical-align: top; }
+.codefile { margin: 1rem 0 1.4rem; border: 1px solid var(--light-gray); background: #fff; }
+.codefile > summary { cursor: pointer; padding: .55rem .9rem; font-size: .78rem; letter-spacing: .04em; color: var(--dark-gray); display: flex; gap: .8rem; align-items: baseline; list-style: none; }
+.codefile > summary::-webkit-details-marker { display: none; }
+.codefile > summary::before { content: '+'; color: var(--accent); font-weight: 600; width: .8rem; }
+.codefile[open] > summary::before { content: '\2212'; }
+.codefile .fname { font-family: 'DejaVu Sans Mono', Consolas, monospace; color: var(--black); font-size: .78rem; }
+.codefile .fcap { color: var(--medium-gray); font-size: .76rem; }
+.codefile .hl { margin: 0; overflow-x: auto; }
+.codefile pre { margin: 0; padding: .9rem 1rem; font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size: .76rem; line-height: 1.5; font-weight: 400; }
+.cmd, .out { margin: .8rem 0 1.2rem; font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size: .76rem; line-height: 1.55; padding: .8rem 1rem; overflow-x: auto; white-space: pre; font-weight: 400; }
+.cmd { background: #1e1e1e; color: #e6e6e6; }
+.cmd::before { content: '$ run'; display:block; color: var(--accent-light); font-size: .64rem; letter-spacing: .15em; text-transform: uppercase; margin-bottom: .3rem; }
+.out { background: #f2f2f2; border-left: 3px solid var(--accent); color: var(--charcoal); }
+.out::before { content: 'expected output'; display:block; color: var(--accent); font-size: .64rem; letter-spacing: .15em; text-transform: uppercase; margin-bottom: .3rem; font-family: var(--font-sans); }
+figure { margin: 1.2rem 0 1.6rem; background: #fff; border: 1px solid var(--light-gray); padding: .8rem; }
+figure img { max-width: 100%; display: block; margin: 0 auto; }
+figcaption { font-size: .76rem; color: var(--medium-gray); margin-top: .5rem; text-align: center; }
+.callout { margin: 1.1rem 0; padding: .9rem 1.1rem; font-size: .88rem; line-height: 1.7; color: var(--dark-gray); background: #f2f2f2; border-left: 3px solid var(--accent); }
+.callout.tip { border-left-color: #5d8a5a; background: #eef3ec; }
+.callout.warn { border-left-color: #b5651d; background: #f7eee3; }
+.callout.check { border-left-color: #3d6a99; background: #ecf1f6; }
+.callout strong { color: var(--black); font-weight: 600; }
+.pager { display:flex; justify-content: space-between; gap: 1rem; margin: 3rem 0 1rem; padding-top: 1.5rem; border-top: 1px solid var(--light-gray); flex-wrap: wrap; }
+.checklist { list-style: none; margin-left: 0 !important; }
+.checklist li { padding-left: 1.6rem; position: relative; }
+.checklist li::before { content: '\2610'; position: absolute; left: 0; color: var(--accent); }
+.sidebar-item a { display:flex; gap:.5rem; width:100%; }
+.sidebar-item.current { color: var(--accent); font-weight: 500; }
+
+</style></head><body>
+<div class="scroll-progress" id="scrollBar"></div>
+<nav id="mainNav"><div class="nav-left"><div class="nav-logo">SENG<span>.</span>12233</div><a class="nav-back" href="../index.html">← Course page</a></div>
+<ul class="nav-links"><li><a href="index.html" class="">LMS Guide</a></li><li><a href="../index.html#labs">Labs</a></li><li><a href="../index.html#lectures">Lectures</a></li><li><a href="../index.html#git">Git</a></li></ul>
+<button class="mobile-menu-btn" aria-label="Menu"><span></span><span></span><span></span></button></nav>
+<section class="hero" style="padding-bottom:2.5rem"><p class="hero-label">LMS Guide · Step 09 of 9 · Week 12 · Lab 9</p><h1>Threads & Shipping v1.0</h1><p class="hero-description"></p><div class="hero-meta"><span class="meta-tag">Lab 9</span><span class="meta-tag">Week 12</span><span class="meta-tag">Threads</span><span class="meta-tag">Final</span></div></section>
+<div class="layout"><aside class="sidebar">
+    <p class="sidebar-title">LMS Guide</p>
+    <p class="sidebar-desc">Build the Library Management System step by step</p>
+    <div class="sidebar-nav-links">
+      <a class="sidebar-nav-link" href="index.html">Overview</a>
+      <a class="sidebar-nav-link" href="../index.html">← Course page</a>
+    </div>
+    <div class="sidebar-section"><p class="sidebar-section-label">Steps</p><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step01_encapsulation.html">01 · Classes, Objects & Encapsulation</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step02_inheritance.html">02 · Inheritance & Polymorphism</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step03_interfaces.html">03 · Abstract Classes & Interfaces</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step04_exceptions.html">04 · Exception Handling</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step05_gui_layouts.html">05 · GUI I: Layouts & Widgets</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step06_gui_events_mvc.html">06 · GUI II: Events & MVC</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step07_generics_streams.html">07 · Generics, Collections & Streams</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step08_jdbc.html">08 · JDBC & the Database</a></div><div class="sidebar-item current"><span class="sidebar-check">●</span><a href="step09_threads_final.html">09 · Threads & Shipping v1.0</a></div></div>
+  </aside><main class="main-content"><div class="guide-intro"><div class="step-block"><p><strong>Goal:</strong> keep the window <strong>responsive</strong>, make shared data <strong>thread-safe</strong>, and <strong>ship</strong> a runnable <code>v1.0</code>.</p></div>
+<figure><img src="img/threads.png" alt="Three threads cooperate in the final application"/><figcaption>Three threads cooperate in the final application</figcaption></figure>
+<div class="step-block"><h3>1. A daemon thread for overdue loans</h3>
+<p>It wakes every few seconds, asks the database, and reports back <strong>on the EDT</strong> with <code>invokeLater</code>.</p></div>
+<details class="codefile" open><summary><span class="fname">src/lms/service/OverdueChecker.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.service</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.function.IntConsumer</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * OverdueChecker - a background DAEMON thread (Week 12).</span>
+<span class="cm"> *</span>
+<span class="cm"> * Every few seconds it asks the database how many loans are overdue and</span>
+<span class="cm"> * hands the number to a callback. It never touches Swing itself: the</span>
+<span class="cm"> * callback is responsible for jumping onto the Event Dispatch Thread.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Daemon = "do not keep the program alive just for me": when the window</span>
+<span class="cm"> * closes and the main work ends, the JVM exits even though this loop</span>
+<span class="cm"> * would run forever.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">OverdueChecker</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">Runnable</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">LibraryController</span><span class="w"> </span><span class="n">controller</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">IntConsumer</span><span class="w"> </span><span class="n">onResult</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">intervalMillis</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">OverdueChecker</span><span class="p">(</span><span class="n">LibraryController</span><span class="w"> </span><span class="n">controller</span><span class="p">,</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">intervalMillis</span><span class="p">,</span><span class="w"> </span><span class="n">IntConsumer</span><span class="w"> </span><span class="n">onResult</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">controller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">controller</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">intervalMillis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intervalMillis</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">onResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">onResult</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Creates, configures and starts the thread. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Thread</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="n">LibraryController</span><span class="w"> </span><span class="n">controller</span><span class="p">,</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">intervalMillis</span><span class="p">,</span><span class="w"> </span><span class="n">IntConsumer</span><span class="w"> </span><span class="n">onResult</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Thread</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Thread</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">OverdueChecker</span><span class="p">(</span><span class="n">controller</span><span class="p">,</span><span class="w"> </span><span class="n">intervalMillis</span><span class="p">,</span><span class="w"> </span><span class="n">onResult</span><span class="p">),</span><span class="w"> </span><span class="s">"overdue-checker"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">t</span><span class="p">.</span><span class="na">setDaemon</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+<span class="w">        </span><span class="n">t</span><span class="p">.</span><span class="na">start</span><span class="p">();</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">t</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">Thread</span><span class="p">.</span><span class="na">currentThread</span><span class="p">().</span><span class="na">isInterrupted</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">onResult</span><span class="p">.</span><span class="na">accept</span><span class="p">(</span><span class="n">controller</span><span class="p">.</span><span class="na">countOverdue</span><span class="p">());</span>
+<span class="w">                </span><span class="n">Thread</span><span class="p">.</span><span class="na">sleep</span><span class="p">(</span><span class="n">intervalMillis</span><span class="p">);</span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">InterruptedException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">Thread</span><span class="p">.</span><span class="na">currentThread</span><span class="p">().</span><span class="na">interrupt</span><span class="p">();</span><span class="w">          </span><span class="c1">// restore the flag and leave the loop</span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RuntimeException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">System</span><span class="p">.</span><span class="na">err</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Overdue check failed: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span><span class="w">   </span><span class="c1">// keep the thread alive</span>
+<span class="w">                </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Thread</span><span class="p">.</span><span class="na">sleep</span><span class="p">(</span><span class="n">intervalMillis</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">InterruptedException</span><span class="w"> </span><span class="n">ie</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="step-block"><h3>2. A <code>SwingWorker</code> for the slow import</h3>
+<p><code>doInBackground()</code> runs off the EDT; <code>process()</code> and <code>done()</code> run on it. That is why the progress bar can be updated safely.</p></div>
+<details class="codefile" open><summary><span class="fname">src/lms/ui/ImportWorker.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.ui</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.service.LibraryController</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">javax.swing.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.List</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * ImportWorker - a SwingWorker (Week 12).</span>
+<span class="cm"> *</span>
+<span class="cm"> * The rule of Swing threading:</span>
+<span class="cm"> *   - SLOW work must NOT run on the Event Dispatch Thread (the window freezes).</span>
+<span class="cm"> *   - Swing components may ONLY be touched ON the Event Dispatch Thread.</span>
+<span class="cm"> *</span>
+<span class="cm"> * SwingWorker gives us both:</span>
+<span class="cm"> *   doInBackground()  runs on a worker thread  -&gt; slow work goes here</span>
+<span class="cm"> *   publish()/process()/done() run on the EDT   -&gt; safe to update the GUI</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ImportWorker</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">SwingWorker</span><span class="o">&lt;</span><span class="n">Integer</span><span class="p">,</span><span class="w"> </span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="o">[][]</span><span class="w"> </span><span class="n">SAMPLE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="p">{</span><span class="s">"Design Patterns"</span><span class="p">,</span><span class="w"> </span><span class="s">"Erich Gamma"</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">"The Pragmatic Programmer"</span><span class="p">,</span><span class="w"> </span><span class="s">"Andrew Hunt"</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="s">"Code Complete"</span><span class="p">,</span><span class="w"> </span><span class="s">"Steve McConnell"</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">"Java Concurrency in Practice"</span><span class="p">,</span><span class="w"> </span><span class="s">"Brian Goetz"</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="s">"Domain-Driven Design"</span><span class="p">,</span><span class="w"> </span><span class="s">"Eric Evans"</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">"Clean Architecture"</span><span class="p">,</span><span class="w"> </span><span class="s">"Robert C. Martin"</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="s">"Head First Design Patterns"</span><span class="p">,</span><span class="w"> </span><span class="s">"Eric Freeman"</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">"Algorithms"</span><span class="p">,</span><span class="w"> </span><span class="s">"Robert Sedgewick"</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="s">"Operating System Concepts"</span><span class="p">,</span><span class="w"> </span><span class="s">"Abraham Silberschatz"</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">"Database System Concepts"</span><span class="p">,</span><span class="w"> </span><span class="s">"Abraham Silberschatz"</span><span class="p">},</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">LibraryController</span><span class="w"> </span><span class="n">controller</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JProgressBar</span><span class="w"> </span><span class="n">bar</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Runnable</span><span class="w"> </span><span class="n">whenFinished</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">ImportWorker</span><span class="p">(</span><span class="n">LibraryController</span><span class="w"> </span><span class="n">controller</span><span class="p">,</span><span class="w"> </span><span class="n">JProgressBar</span><span class="w"> </span><span class="n">bar</span><span class="p">,</span><span class="w"> </span><span class="n">Runnable</span><span class="w"> </span><span class="n">whenFinished</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">controller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">controller</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">bar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bar</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">whenFinished</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">whenFinished</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">protected</span><span class="w"> </span><span class="n">Integer</span><span class="w"> </span><span class="nf">doInBackground</span><span class="p">()</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="p">{</span><span class="w">      </span><span class="c1">// WORKER thread</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">added</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">SAMPLE</span><span class="p">.</span><span class="na">length</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">String</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"I"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">String</span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">"%03d"</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">controller</span><span class="p">.</span><span class="na">addItem</span><span class="p">(</span><span class="s">"Book"</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">SAMPLE</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="mi">0</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">SAMPLE</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="mi">1</span><span class="o">]</span><span class="p">);</span>
+<span class="w">                </span><span class="n">added</span><span class="o">++</span><span class="p">;</span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">IllegalArgumentException</span><span class="w"> </span><span class="n">alreadyThere</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="c1">// imported before - skip it</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">            </span><span class="n">Thread</span><span class="p">.</span><span class="na">sleep</span><span class="p">(</span><span class="mi">400</span><span class="p">);</span><span class="w">                                  </span><span class="c1">// pretend this is slow (network / big file)</span>
+<span class="w">            </span><span class="n">publish</span><span class="p">((</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">SAMPLE</span><span class="p">.</span><span class="na">length</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">added</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">protected</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">chunks</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">             </span><span class="c1">// EDT</span>
+<span class="w">        </span><span class="n">bar</span><span class="p">.</span><span class="na">setValue</span><span class="p">(</span><span class="n">chunks</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">chunks</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">protected</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">done</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">                                     </span><span class="c1">// EDT</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">added</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get</span><span class="p">();</span>
+<span class="w">            </span><span class="n">bar</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="s">"Imported "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">added</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" book(s)"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">bar</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="s">"Import failed"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">whenFinished</span><span class="p">.</span><span class="na">run</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="step-block"><h3>3. <code>synchronized</code> where threads meet</h3>
+<p>The table refresh (EDT) and the import (worker) both use <code>Library</code>. All of <code>Library</code>'s methods are now <code>synchronized</code>, and so are the controller's compound operations. See <em>check-then-act</em> in <code>addItem</code>.</p></div>
+<details class="codefile"><summary><span class="fname">src/lms/service/Library.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.service</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.exception.ItemNotAvailableException</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.exception.MemberNotFoundException</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Book</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.DVD</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.LibraryItem</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Loanable</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Member</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Reservable</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.stream.Collectors</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Library - Week 12 version: every method that touches the shared data is</span>
+<span class="cm"> * SYNCHRONIZED, because the GUI thread and background threads now share it.</span>
+<span class="cm"> * (Week 10: Generics, Collections, Streams.)</span>
+<span class="cm"> *</span>
+<span class="cm"> * Kept from Week 3: printAllLateFees(), the addItem() overloads.</span>
+<span class="cm"> * New this week: methods that talk to INTERFACE types (Loanable,</span>
+<span class="cm"> * Reservable) instead of concrete classes, and a Comparable-based sort.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Library</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="c1">// Week 10: Lists replaced by generic Repositories (Maps inside)</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Repository</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Repository</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">LibraryItem</span><span class="p">::</span><span class="n">getId</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Repository</span><span class="o">&lt;</span><span class="n">Member</span><span class="o">&gt;</span><span class="w"> </span><span class="n">members</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Repository</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">Member</span><span class="p">::</span><span class="n">getMemberId</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// ---- from Week 3 (unchanged) ----</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addItem</span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">items</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">item</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addItem</span><span class="p">(</span><span class="n">Book</span><span class="w"> </span><span class="n">book</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">items</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">book</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addItem</span><span class="p">(</span><span class="n">DVD</span><span class="w"> </span><span class="n">dvd</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">items</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">dvd</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addMember</span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">members</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">member</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** True if an item with this id already exists (used to reject duplicates). */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">hasItem</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">items</span><span class="p">.</span><span class="na">exists</span><span class="p">(</span><span class="n">itemId</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">printAllLateFees</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">daysLate</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- Late fees if "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">daysLate</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" day(s) late ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">items</span><span class="p">.</span><span class="na">findAll</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="na">getTitle</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">": "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="na">calculateLateFee</span><span class="p">(</span><span class="n">daysLate</span><span class="p">));</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// ---- NEW in Week 4 ----</span>
+
+<span class="w">    </span><span class="cm">/**</span>
+<span class="cm">     * The parameter type is the INTERFACE Loanable, not LibraryItem.</span>
+<span class="cm">     * This method would work for anything that promises to be loanable,</span>
+<span class="cm">     * even a class that is not a LibraryItem at all.</span>
+<span class="cm">     */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">lend</span><span class="p">(</span><span class="n">Loanable</span><span class="w"> </span><span class="n">thing</span><span class="p">,</span><span class="w"> </span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">ItemNotAvailableException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">thing</span><span class="p">.</span><span class="na">loan</span><span class="p">(</span><span class="n">member</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// ---- NEW in Week 5 ----</span>
+
+<span class="w">    </span><span class="cm">/** Looks a member up by id. Throws the UNCHECKED MemberNotFoundException. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="n">Member</span><span class="w"> </span><span class="nf">findMember</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">memberId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">members</span><span class="p">.</span><span class="na">findById</span><span class="p">(</span><span class="n">memberId</span><span class="p">).</span><span class="na">orElseThrow</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MemberNotFoundException</span><span class="p">(</span><span class="n">memberId</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Looks an item up by id. Throws the CHECKED ItemNotAvailableException. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="n">LibraryItem</span><span class="w"> </span><span class="nf">findItem</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">ItemNotAvailableException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Optional</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">items</span><span class="p">.</span><span class="na">findById</span><span class="p">(</span><span class="n">itemId</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">found</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ItemNotAvailableException</span><span class="p">(</span><span class="s">"No item with id '"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">itemId</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"'"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">found</span><span class="p">.</span><span class="na">get</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** The one-stop "borrow" operation the GUI will call later. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">borrowItem</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">memberId</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">ItemNotAvailableException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">findMember</span><span class="p">(</span><span class="n">memberId</span><span class="p">);</span>
+<span class="w">        </span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">findItem</span><span class="p">(</span><span class="n">itemId</span><span class="p">);</span>
+<span class="w">        </span><span class="n">item</span><span class="p">.</span><span class="na">loan</span><span class="p">(</span><span class="n">member</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">returnItem</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">ItemNotAvailableException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">findItem</span><span class="p">(</span><span class="n">itemId</span><span class="p">).</span><span class="na">returnItem</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/**</span>
+<span class="cm">     * Only some items are Reservable. Checking for the INTERFACE (not for</span>
+<span class="cm">     * Book) means a future Reservable class works here with no changes.</span>
+<span class="cm">     */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">reserveIfPossible</span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">Reservable</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">r</span><span class="p">.</span><span class="na">reserve</span><span class="p">(</span><span class="n">member</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="na">getTitle</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" cannot be reserved."</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Prints members ranked by activity, using Member's compareTo(). */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">printMembersByActivity</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Member</span><span class="o">&gt;</span><span class="w"> </span><span class="n">sorted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">members</span><span class="p">.</span><span class="na">findAll</span><span class="p">();</span>
+<span class="w">        </span><span class="n">Collections</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">sorted</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- Members ranked by activity ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">sorted</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="na">getName</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" ("</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="na">getBorrowedCount</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" borrowed)"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">listItems</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- Items in the library ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">items</span><span class="p">.</span><span class="na">findAll</span><span class="p">())</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">item</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">listMembers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- Registered members ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">members</span><span class="p">.</span><span class="na">findAll</span><span class="p">())</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">m</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getItems</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">items</span><span class="p">.</span><span class="na">findAll</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Member</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getMembers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">members</span><span class="p">.</span><span class="na">findAll</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// ---- NEW in Week 10: streams ----</span>
+
+<span class="w">    </span><span class="cm">/** Case-insensitive search in title, id, or author (for books). */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">text</span><span class="p">.</span><span class="na">trim</span><span class="p">().</span><span class="na">toLowerCase</span><span class="p">();</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">items</span><span class="p">.</span><span class="na">search</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="na">getTitle</span><span class="p">().</span><span class="na">toLowerCase</span><span class="p">().</span><span class="na">contains</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+<span class="w">                </span><span class="o">||</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="na">getId</span><span class="p">().</span><span class="na">toLowerCase</span><span class="p">().</span><span class="na">contains</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+<span class="w">                </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">Book</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="na">getAuthor</span><span class="p">().</span><span class="na">toLowerCase</span><span class="p">().</span><span class="na">contains</span><span class="p">(</span><span class="n">q</span><span class="p">)));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Map: member name -&gt; number of items currently on loan. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">Long</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">loansPerMember</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">items</span><span class="p">.</span><span class="na">findAll</span><span class="p">().</span><span class="na">stream</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="n">LibraryItem</span><span class="p">::</span><span class="n">isBorrowed</span><span class="p">)</span>
+<span class="w">                </span><span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">Collectors</span><span class="p">.</span><span class="na">groupingBy</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="na">getBorrower</span><span class="p">().</span><span class="na">getName</span><span class="p">(),</span><span class="w"> </span><span class="n">TreeMap</span><span class="p">::</span><span class="k">new</span><span class="p">,</span><span class="w"> </span><span class="n">Collectors</span><span class="p">.</span><span class="na">counting</span><span class="p">()));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** All items that are currently available, sorted by title. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">availableItems</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">items</span><span class="p">.</span><span class="na">findAll</span><span class="p">().</span><span class="na">stream</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">i</span><span class="p">.</span><span class="na">isBorrowed</span><span class="p">())</span>
+<span class="w">                </span><span class="p">.</span><span class="na">sorted</span><span class="p">(</span><span class="n">Comparator</span><span class="p">.</span><span class="na">comparing</span><span class="p">(</span><span class="n">LibraryItem</span><span class="p">::</span><span class="n">getTitle</span><span class="p">))</span>
+<span class="w">                </span><span class="p">.</span><span class="na">toList</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<details class="codefile"><summary><span class="fname">src/lms/ui/MainFrame.java</span><span class="fcap">Start the checker; Import button wiring</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.ui</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.exception.DataAccessException</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.exception.ItemNotAvailableException</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.exception.MemberNotFoundException</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.service.LibraryController</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.service.OverdueChecker</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">javax.swing.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">javax.swing.table.DefaultTableModel</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.awt.*</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * MainFrame - Week 12: adds a background import (SwingWorker + progress bar) and a</span>
+<span class="cm"> * daemon OverdueChecker thread. (Week 11: New Member + Loan History + database.)</span>
+<span class="cm"> * (Week 10: search + report. Week 9: events, dialogs and MVC.)</span>
+<span class="cm"> *</span>
+<span class="cm"> * Same layout as Week 8. New this week:</span>
+<span class="cm"> *   - ActionListeners on the buttons (event-driven programming)</span>
+<span class="cm"> *   - JOptionPane messages for errors</span>
+<span class="cm"> *   - the frame talks to a LibraryController, never to the model directly</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">MainFrame</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">JFrame</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">LibraryController</span><span class="w"> </span><span class="n">controller</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">DefaultTableModel</span><span class="w"> </span><span class="n">tableModel</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JTable</span><span class="w"> </span><span class="n">table</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JTextField</span><span class="w"> </span><span class="n">idField</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JTextField</span><span class="p">(</span><span class="mi">12</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JTextField</span><span class="w"> </span><span class="n">titleField</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JTextField</span><span class="p">(</span><span class="mi">12</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JTextField</span><span class="w"> </span><span class="n">detailField</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JTextField</span><span class="p">(</span><span class="mi">12</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JComboBox</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">typeBox</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JComboBox</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">String</span><span class="o">[]</span><span class="p">{</span><span class="s">"Book"</span><span class="p">,</span><span class="w"> </span><span class="s">"DVD"</span><span class="p">,</span><span class="w"> </span><span class="s">"Magazine"</span><span class="p">});</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JComboBox</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">memberBox</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JComboBox</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JButton</span><span class="w"> </span><span class="n">addButton</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JButton</span><span class="p">(</span><span class="s">"Add Item"</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JButton</span><span class="w"> </span><span class="n">borrowButton</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JButton</span><span class="p">(</span><span class="s">"Borrow"</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JButton</span><span class="w"> </span><span class="n">returnButton</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JButton</span><span class="p">(</span><span class="s">"Return"</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JButton</span><span class="w"> </span><span class="n">reportButton</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JButton</span><span class="p">(</span><span class="s">"Loan Report"</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JButton</span><span class="w"> </span><span class="n">historyButton</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JButton</span><span class="p">(</span><span class="s">"Loan History"</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JButton</span><span class="w"> </span><span class="n">importButton</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JButton</span><span class="p">(</span><span class="s">"Import Sample Books"</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JProgressBar</span><span class="w"> </span><span class="n">progressBar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JProgressBar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JLabel</span><span class="w"> </span><span class="n">overdueLabel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"Overdue: checking..."</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JButton</span><span class="w"> </span><span class="n">newMemberButton</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JButton</span><span class="p">(</span><span class="s">"New Member..."</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JTextField</span><span class="w"> </span><span class="n">searchField</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JTextField</span><span class="p">(</span><span class="mi">16</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JButton</span><span class="w"> </span><span class="n">searchButton</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JButton</span><span class="p">(</span><span class="s">"Search"</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">JLabel</span><span class="w"> </span><span class="n">statusLabel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">" Ready"</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">MainFrame</span><span class="p">(</span><span class="n">LibraryController</span><span class="w"> </span><span class="n">controller</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">super</span><span class="p">(</span><span class="s">"Library Management System"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">controller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">controller</span><span class="p">;</span>
+
+<span class="w">        </span><span class="c1">// ---- table (CENTER) ----</span>
+<span class="w">        </span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s">"ID"</span><span class="p">,</span><span class="w"> </span><span class="s">"Title"</span><span class="p">,</span><span class="w"> </span><span class="s">"Type"</span><span class="p">,</span><span class="w"> </span><span class="s">"Detail"</span><span class="p">,</span><span class="w"> </span><span class="s">"Status"</span><span class="p">};</span>
+<span class="w">        </span><span class="n">tableModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DefaultTableModel</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nd">@Override</span><span class="w"> </span><span class="kd">public</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">isCellEditable</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">col</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">        </span><span class="p">};</span>
+<span class="w">        </span><span class="n">table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JTable</span><span class="p">(</span><span class="n">tableModel</span><span class="p">);</span>
+<span class="w">        </span><span class="n">table</span><span class="p">.</span><span class="na">setRowHeight</span><span class="p">(</span><span class="mi">24</span><span class="p">);</span>
+<span class="w">        </span><span class="n">table</span><span class="p">.</span><span class="na">setSelectionMode</span><span class="p">(</span><span class="n">ListSelectionModel</span><span class="p">.</span><span class="na">SINGLE_SELECTION</span><span class="p">);</span>
+<span class="w">        </span><span class="n">table</span><span class="p">.</span><span class="na">getColumnModel</span><span class="p">().</span><span class="na">getColumn</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="na">setPreferredWidth</span><span class="p">(</span><span class="mi">200</span><span class="p">);</span>
+<span class="w">        </span><span class="n">table</span><span class="p">.</span><span class="na">getColumnModel</span><span class="p">().</span><span class="na">getColumn</span><span class="p">(</span><span class="mi">3</span><span class="p">).</span><span class="na">setPreferredWidth</span><span class="p">(</span><span class="mi">140</span><span class="p">);</span>
+<span class="w">        </span><span class="n">table</span><span class="p">.</span><span class="na">getColumnModel</span><span class="p">().</span><span class="na">getColumn</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="na">setPreferredWidth</span><span class="p">(</span><span class="mi">190</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// ---- form (WEST) ----</span>
+<span class="w">        </span><span class="n">JPanel</span><span class="w"> </span><span class="n">form</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JPanel</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">GridLayout</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">));</span>
+<span class="w">        </span><span class="n">form</span><span class="p">.</span><span class="na">setBorder</span><span class="p">(</span><span class="n">BorderFactory</span><span class="p">.</span><span class="na">createTitledBorder</span><span class="p">(</span><span class="s">"New item"</span><span class="p">));</span>
+<span class="w">        </span><span class="n">form</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"Type:"</span><span class="p">));</span><span class="w">    </span><span class="n">form</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">typeBox</span><span class="p">);</span>
+<span class="w">        </span><span class="n">form</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"ID:"</span><span class="p">));</span><span class="w">      </span><span class="n">form</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">idField</span><span class="p">);</span>
+<span class="w">        </span><span class="n">form</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"Title:"</span><span class="p">));</span><span class="w">   </span><span class="n">form</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">titleField</span><span class="p">);</span>
+<span class="w">        </span><span class="n">form</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"Detail:"</span><span class="p">));</span><span class="w">  </span><span class="n">form</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">detailField</span><span class="p">);</span>
+<span class="w">        </span><span class="n">form</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">""</span><span class="p">));</span><span class="w">         </span><span class="n">form</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">addButton</span><span class="p">);</span>
+<span class="w">        </span><span class="n">JPanel</span><span class="w"> </span><span class="n">west</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JPanel</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">());</span>
+<span class="w">        </span><span class="n">west</span><span class="p">.</span><span class="na">setBorder</span><span class="p">(</span><span class="n">BorderFactory</span><span class="p">.</span><span class="na">createEmptyBorder</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">));</span>
+<span class="w">        </span><span class="n">JPanel</span><span class="w"> </span><span class="n">tools</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JPanel</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">GridLayout</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">));</span>
+<span class="w">        </span><span class="n">tools</span><span class="p">.</span><span class="na">setBorder</span><span class="p">(</span><span class="n">BorderFactory</span><span class="p">.</span><span class="na">createTitledBorder</span><span class="p">(</span><span class="s">"Library"</span><span class="p">));</span>
+<span class="w">        </span><span class="n">tools</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">newMemberButton</span><span class="p">);</span>
+<span class="w">        </span><span class="n">tools</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">reportButton</span><span class="p">);</span>
+<span class="w">        </span><span class="n">tools</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">historyButton</span><span class="p">);</span>
+<span class="w">        </span><span class="n">tools</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">importButton</span><span class="p">);</span>
+<span class="w">        </span><span class="n">JPanel</span><span class="w"> </span><span class="n">toolsHolder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JPanel</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">());</span>
+<span class="w">        </span><span class="n">toolsHolder</span><span class="p">.</span><span class="na">setBorder</span><span class="p">(</span><span class="n">BorderFactory</span><span class="p">.</span><span class="na">createEmptyBorder</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+<span class="w">        </span><span class="n">toolsHolder</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">tools</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">NORTH</span><span class="p">);</span>
+<span class="w">        </span><span class="n">west</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">form</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">NORTH</span><span class="p">);</span>
+<span class="w">        </span><span class="n">west</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">toolsHolder</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">CENTER</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// ---- title (NORTH) ----</span>
+<span class="w">        </span><span class="n">JLabel</span><span class="w"> </span><span class="n">heading</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"Library Management System"</span><span class="p">,</span><span class="w"> </span><span class="n">SwingConstants</span><span class="p">.</span><span class="na">CENTER</span><span class="p">);</span>
+<span class="w">        </span><span class="n">heading</span><span class="p">.</span><span class="na">setFont</span><span class="p">(</span><span class="n">heading</span><span class="p">.</span><span class="na">getFont</span><span class="p">().</span><span class="na">deriveFont</span><span class="p">(</span><span class="n">Font</span><span class="p">.</span><span class="na">BOLD</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="n">f</span><span class="p">));</span>
+<span class="w">        </span><span class="n">heading</span><span class="p">.</span><span class="na">setBorder</span><span class="p">(</span><span class="n">BorderFactory</span><span class="p">.</span><span class="na">createEmptyBorder</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+<span class="w">        </span><span class="n">JPanel</span><span class="w"> </span><span class="n">searchBar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JPanel</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">FlowLayout</span><span class="p">(</span><span class="n">FlowLayout</span><span class="p">.</span><span class="na">CENTER</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span>
+<span class="w">        </span><span class="n">searchBar</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"Search:"</span><span class="p">));</span>
+<span class="w">        </span><span class="n">searchBar</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">searchField</span><span class="p">);</span>
+<span class="w">        </span><span class="n">searchBar</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">searchButton</span><span class="p">);</span>
+<span class="w">        </span><span class="n">JPanel</span><span class="w"> </span><span class="n">north</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JPanel</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">());</span>
+<span class="w">        </span><span class="n">north</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">heading</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">NORTH</span><span class="p">);</span>
+<span class="w">        </span><span class="n">north</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">searchBar</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">CENTER</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// ---- buttons + member picker + status (SOUTH) ----</span>
+<span class="w">        </span><span class="n">JPanel</span><span class="w"> </span><span class="n">buttons</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JPanel</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">FlowLayout</span><span class="p">(</span><span class="n">FlowLayout</span><span class="p">.</span><span class="na">RIGHT</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">));</span>
+<span class="w">        </span><span class="n">buttons</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"Member:"</span><span class="p">));</span>
+<span class="w">        </span><span class="n">buttons</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">memberBox</span><span class="p">);</span>
+<span class="w">        </span><span class="n">buttons</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">borrowButton</span><span class="p">);</span>
+<span class="w">        </span><span class="n">buttons</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">returnButton</span><span class="p">);</span>
+<span class="w">        </span><span class="n">JPanel</span><span class="w"> </span><span class="n">south</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JPanel</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">());</span>
+<span class="w">        </span><span class="n">south</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">statusLabel</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">WEST</span><span class="p">);</span>
+<span class="w">        </span><span class="n">progressBar</span><span class="p">.</span><span class="na">setStringPainted</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+<span class="w">        </span><span class="n">progressBar</span><span class="p">.</span><span class="na">setVisible</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span>
+<span class="w">        </span><span class="n">JPanel</span><span class="w"> </span><span class="n">middle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JPanel</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">FlowLayout</span><span class="p">(</span><span class="n">FlowLayout</span><span class="p">.</span><span class="na">CENTER</span><span class="p">,</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">));</span>
+<span class="w">        </span><span class="n">middle</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">overdueLabel</span><span class="p">);</span>
+<span class="w">        </span><span class="n">middle</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">progressBar</span><span class="p">);</span>
+<span class="w">        </span><span class="n">south</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">middle</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">CENTER</span><span class="p">);</span>
+<span class="w">        </span><span class="n">south</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">buttons</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">EAST</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">setLayout</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">());</span>
+<span class="w">        </span><span class="n">add</span><span class="p">(</span><span class="n">north</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">NORTH</span><span class="p">);</span>
+<span class="w">        </span><span class="n">add</span><span class="p">(</span><span class="n">west</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">WEST</span><span class="p">);</span>
+<span class="w">        </span><span class="n">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JScrollPane</span><span class="p">(</span><span class="n">table</span><span class="p">),</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">CENTER</span><span class="p">);</span>
+<span class="w">        </span><span class="n">add</span><span class="p">(</span><span class="n">south</span><span class="p">,</span><span class="w"> </span><span class="n">BorderLayout</span><span class="p">.</span><span class="na">SOUTH</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">wireEvents</span><span class="p">();</span>
+
+<span class="w">        </span><span class="n">setDefaultCloseOperation</span><span class="p">(</span><span class="n">JFrame</span><span class="p">.</span><span class="na">EXIT_ON_CLOSE</span><span class="p">);</span>
+<span class="w">        </span><span class="n">setSize</span><span class="p">(</span><span class="mi">1020</span><span class="p">,</span><span class="w"> </span><span class="mi">480</span><span class="p">);</span>
+<span class="w">        </span><span class="n">setLocationRelativeTo</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">loadMembers</span><span class="p">();</span>
+<span class="w">        </span><span class="n">refreshTable</span><span class="p">();</span>
+
+<span class="w">        </span><span class="c1">// Daemon thread: results arrive on ITS thread, so hop onto the EDT to touch the label.</span>
+<span class="w">        </span><span class="n">OverdueChecker</span><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">controller</span><span class="p">,</span><span class="w"> </span><span class="mi">3000</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                </span><span class="n">SwingUtilities</span><span class="p">.</span><span class="na">invokeLater</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">overdueLabel</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span>
+<span class="w">                        </span><span class="s">"Overdue (&gt;"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">LibraryController</span><span class="p">.</span><span class="na">loanDays</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" days): "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">count</span><span class="p">)));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// ------------------------------------------------------------------</span>
+<span class="w">    </span><span class="c1">// EVENTS: "when this happens, run that"</span>
+<span class="w">    </span><span class="c1">// ------------------------------------------------------------------</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">wireEvents</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">addButton</span><span class="p">.</span><span class="na">addActionListener</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">onAdd</span><span class="p">());</span>
+<span class="w">        </span><span class="n">borrowButton</span><span class="p">.</span><span class="na">addActionListener</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">onBorrow</span><span class="p">());</span>
+<span class="w">        </span><span class="n">returnButton</span><span class="p">.</span><span class="na">addActionListener</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">onReturn</span><span class="p">());</span>
+<span class="w">        </span><span class="n">searchButton</span><span class="p">.</span><span class="na">addActionListener</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">refreshTable</span><span class="p">());</span>
+<span class="w">        </span><span class="n">searchField</span><span class="p">.</span><span class="na">addActionListener</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">refreshTable</span><span class="p">());</span><span class="w">   </span><span class="c1">// Enter key</span>
+<span class="w">        </span><span class="n">reportButton</span><span class="p">.</span><span class="na">addActionListener</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">showMessageDialog</span><span class="p">(</span><span class="k">this</span><span class="p">,</span>
+<span class="w">                </span><span class="n">controller</span><span class="p">.</span><span class="na">loanReport</span><span class="p">(),</span><span class="w"> </span><span class="s">"Loan report"</span><span class="p">,</span><span class="w"> </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">INFORMATION_MESSAGE</span><span class="p">));</span>
+<span class="w">        </span><span class="n">historyButton</span><span class="p">.</span><span class="na">addActionListener</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">onHistory</span><span class="p">());</span>
+<span class="w">        </span><span class="n">newMemberButton</span><span class="p">.</span><span class="na">addActionListener</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">onNewMember</span><span class="p">());</span>
+<span class="w">        </span><span class="n">importButton</span><span class="p">.</span><span class="na">addActionListener</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">onImport</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onAdd</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">controller</span><span class="p">.</span><span class="na">addItem</span><span class="p">((</span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="n">typeBox</span><span class="p">.</span><span class="na">getSelectedItem</span><span class="p">(),</span>
+<span class="w">                    </span><span class="n">idField</span><span class="p">.</span><span class="na">getText</span><span class="p">().</span><span class="na">trim</span><span class="p">(),</span><span class="w"> </span><span class="n">titleField</span><span class="p">.</span><span class="na">getText</span><span class="p">(),</span><span class="w"> </span><span class="n">detailField</span><span class="p">.</span><span class="na">getText</span><span class="p">());</span>
+<span class="w">            </span><span class="n">setStatus</span><span class="p">(</span><span class="s">"Added "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">titleField</span><span class="p">.</span><span class="na">getText</span><span class="p">().</span><span class="na">trim</span><span class="p">());</span>
+<span class="w">            </span><span class="n">idField</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span><span class="s">""</span><span class="p">);</span><span class="w"> </span><span class="n">titleField</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span><span class="s">""</span><span class="p">);</span><span class="w"> </span><span class="n">detailField</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span><span class="s">""</span><span class="p">);</span>
+<span class="w">            </span><span class="n">refreshTable</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">IllegalArgumentException</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">DataAccessException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">showError</span><span class="p">(</span><span class="s">"Cannot add item"</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onBorrow</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">selectedItemId</span><span class="p">();</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">itemId</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">memberId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="n">memberBox</span><span class="p">.</span><span class="na">getSelectedItem</span><span class="p">()).</span><span class="na">split</span><span class="p">(</span><span class="s">" - "</span><span class="p">)</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">;</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">controller</span><span class="p">.</span><span class="na">borrow</span><span class="p">(</span><span class="n">itemId</span><span class="p">,</span><span class="w"> </span><span class="n">memberId</span><span class="p">);</span>
+<span class="w">            </span><span class="n">setStatus</span><span class="p">(</span><span class="n">itemId</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" borrowed by "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">memberId</span><span class="p">);</span>
+<span class="w">            </span><span class="n">refreshTable</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">ItemNotAvailableException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">showError</span><span class="p">(</span><span class="s">"Cannot borrow"</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">MemberNotFoundException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">showError</span><span class="p">(</span><span class="s">"Unknown member"</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">DataAccessException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">showError</span><span class="p">(</span><span class="s">"Database problem"</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onReturn</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">itemId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">selectedItemId</span><span class="p">();</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">itemId</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">controller</span><span class="p">.</span><span class="na">giveBack</span><span class="p">(</span><span class="n">itemId</span><span class="p">);</span>
+<span class="w">            </span><span class="n">setStatus</span><span class="p">(</span><span class="n">itemId</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" returned"</span><span class="p">);</span>
+<span class="w">            </span><span class="n">refreshTable</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">ItemNotAvailableException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">showError</span><span class="p">(</span><span class="s">"Cannot return"</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">DataAccessException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">showError</span><span class="p">(</span><span class="s">"Database problem"</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onNewMember</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">JTextField</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JTextField</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>
+<span class="w">        </span><span class="n">JTextField</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JTextField</span><span class="p">(</span><span class="mi">16</span><span class="p">);</span>
+<span class="w">        </span><span class="n">JComboBox</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JComboBox</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">String</span><span class="o">[]</span><span class="p">{</span><span class="s">"Student"</span><span class="p">,</span><span class="w"> </span><span class="s">"Staff"</span><span class="p">});</span>
+<span class="w">        </span><span class="n">JPanel</span><span class="w"> </span><span class="n">panel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JPanel</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">GridLayout</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">));</span>
+<span class="w">        </span><span class="n">panel</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"Member ID:"</span><span class="p">));</span><span class="w"> </span><span class="n">panel</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+<span class="w">        </span><span class="n">panel</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"Name:"</span><span class="p">));</span><span class="w">      </span><span class="n">panel</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+<span class="w">        </span><span class="n">panel</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JLabel</span><span class="p">(</span><span class="s">"Type:"</span><span class="p">));</span><span class="w">      </span><span class="n">panel</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">type</span><span class="p">);</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">choice</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">showConfirmDialog</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">panel</span><span class="p">,</span><span class="w"> </span><span class="s">"New member"</span><span class="p">,</span>
+<span class="w">                </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">OK_CANCEL_OPTION</span><span class="p">,</span><span class="w"> </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">PLAIN_MESSAGE</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">choice</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">OK_OPTION</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">controller</span><span class="p">.</span><span class="na">addMember</span><span class="p">((</span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="n">type</span><span class="p">.</span><span class="na">getSelectedItem</span><span class="p">(),</span><span class="w"> </span><span class="n">id</span><span class="p">.</span><span class="na">getText</span><span class="p">().</span><span class="na">trim</span><span class="p">(),</span><span class="w"> </span><span class="n">name</span><span class="p">.</span><span class="na">getText</span><span class="p">());</span>
+<span class="w">            </span><span class="n">loadMembers</span><span class="p">();</span>
+<span class="w">            </span><span class="n">setStatus</span><span class="p">(</span><span class="s">"Member "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span><span class="p">.</span><span class="na">getText</span><span class="p">().</span><span class="na">trim</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" registered"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">IllegalArgumentException</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">DataAccessException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">showError</span><span class="p">(</span><span class="s">"Cannot add member"</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onImport</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">importButton</span><span class="p">.</span><span class="na">setEnabled</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span>
+<span class="w">        </span><span class="n">progressBar</span><span class="p">.</span><span class="na">setValue</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">        </span><span class="n">progressBar</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
+<span class="w">        </span><span class="n">progressBar</span><span class="p">.</span><span class="na">setVisible</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+<span class="w">        </span><span class="k">new</span><span class="w"> </span><span class="n">ImportWorker</span><span class="p">(</span><span class="n">controller</span><span class="p">,</span><span class="w"> </span><span class="n">progressBar</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">importButton</span><span class="p">.</span><span class="na">setEnabled</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+<span class="w">            </span><span class="n">refreshTable</span><span class="p">();</span>
+<span class="w">            </span><span class="n">setStatus</span><span class="p">(</span><span class="s">"Import finished"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}).</span><span class="na">execute</span><span class="p">();</span><span class="w">                         </span><span class="c1">// returns immediately; the GUI stays responsive</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onHistory</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">cols</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s">"Borrowed at"</span><span class="p">,</span><span class="w"> </span><span class="s">"Item"</span><span class="p">,</span><span class="w"> </span><span class="s">"Member"</span><span class="p">,</span><span class="w"> </span><span class="s">"Returned at"</span><span class="p">};</span>
+<span class="w">        </span><span class="n">DefaultTableModel</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DefaultTableModel</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">controller</span><span class="p">.</span><span class="na">loanHistory</span><span class="p">())</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">addRow</span><span class="p">(</span><span class="n">row</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">DataAccessException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">showError</span><span class="p">(</span><span class="s">"Database problem"</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<span class="w">            </span><span class="k">return</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">JScrollPane</span><span class="w"> </span><span class="n">pane</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">JScrollPane</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JTable</span><span class="p">(</span><span class="n">model</span><span class="p">));</span>
+<span class="w">        </span><span class="n">pane</span><span class="p">.</span><span class="na">setPreferredSize</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Dimension</span><span class="p">(</span><span class="mi">620</span><span class="p">,</span><span class="w"> </span><span class="mi">180</span><span class="p">));</span>
+<span class="w">        </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">showMessageDialog</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">pane</span><span class="p">,</span><span class="w"> </span><span class="s">"Loan history"</span><span class="p">,</span><span class="w"> </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">PLAIN_MESSAGE</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// ------------------------------------------------------------------</span>
+<span class="w">    </span><span class="c1">// helpers</span>
+<span class="w">    </span><span class="c1">// ------------------------------------------------------------------</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">selectedItemId</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">getSelectedRow</span><span class="p">();</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">row</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">showMessageDialog</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="s">"Select a row in the table first."</span><span class="p">,</span>
+<span class="w">                    </span><span class="s">"Nothing selected"</span><span class="p">,</span><span class="w"> </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">INFORMATION_MESSAGE</span><span class="p">);</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="n">tableModel</span><span class="p">.</span><span class="na">getValueAt</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">showError</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">message</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">showMessageDialog</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">JOptionPane</span><span class="p">.</span><span class="na">WARNING_MESSAGE</span><span class="p">);</span>
+<span class="w">        </span><span class="n">setStatus</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">": "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">message</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setStatus</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statusLabel</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span><span class="s">" "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">text</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">loadMembers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">memberBox</span><span class="p">.</span><span class="na">removeAllItems</span><span class="p">();</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">controller</span><span class="p">.</span><span class="na">getMembers</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">memberBox</span><span class="p">.</span><span class="na">addItem</span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="na">getMemberId</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" - "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="na">getName</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">refreshTable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">tableModel</span><span class="p">.</span><span class="na">setRowCount</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">controller</span><span class="p">.</span><span class="na">search</span><span class="p">(</span><span class="n">searchField</span><span class="p">.</span><span class="na">getText</span><span class="p">()))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">tableModel</span><span class="p">.</span><span class="na">addRow</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Object</span><span class="o">[]</span><span class="p">{</span>
+<span class="w">                    </span><span class="n">item</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="na">getTitle</span><span class="p">(),</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="na">getClass</span><span class="p">().</span><span class="na">getSimpleName</span><span class="p">(),</span>
+<span class="w">                    </span><span class="n">detailOf</span><span class="p">(</span><span class="n">item</span><span class="p">),</span>
+<span class="w">                    </span><span class="n">item</span><span class="p">.</span><span class="na">isBorrowed</span><span class="p">()</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"On loan: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="na">getBorrower</span><span class="p">().</span><span class="na">getName</span><span class="p">()</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s">"Available"</span><span class="p">});</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">detailOf</span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">Book</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="na">getAuthor</span><span class="p">();</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">DVD</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="na">getDurationMinutes</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" min"</span><span class="p">;</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">Magazine</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s">"Issue "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="na">getIssueNumber</span><span class="p">();</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s">""</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="step-block"><h3>4. See a race condition</h3></div>
+<details class="codefile"><summary><span class="fname">src/lms/RaceDemo.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * RaceDemo - see a race condition with your own eyes (Week 12, console).</span>
+<span class="cm"> *</span>
+<span class="cm"> * Two threads each add 1 to a shared counter 200,000 times.</span>
+<span class="cm"> *   unsafe:   count++ is THREE steps (read, add, write) - threads overwrite each other</span>
+<span class="cm"> *   safe:     synchronized makes the three steps happen as one</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">RaceDemo</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="kd">volatile</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">unsafeCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">   </span><span class="c1">// volatile: still NOT atomic</span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">safeCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="kd">synchronized</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">safeIncrement</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">safeCount</span><span class="o">++</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">InterruptedException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Runnable</span><span class="w"> </span><span class="n">unsafe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1_000_000</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="n">unsafeCount</span><span class="o">++</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+<span class="w">        </span><span class="n">Runnable</span><span class="w"> </span><span class="n">safe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1_000_000</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="n">safeIncrement</span><span class="p">();</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">        </span><span class="n">run</span><span class="p">(</span><span class="n">unsafe</span><span class="p">);</span>
+<span class="w">        </span><span class="n">run</span><span class="p">(</span><span class="n">safe</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Expected      : 2000000"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Unsynchronized: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">unsafeCount</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">unsafeCount</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2000000</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"  (lucky run!)"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s">"  &lt;-- updates were lost"</span><span class="p">));</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Synchronized  : "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">safeCount</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">Runnable</span><span class="w"> </span><span class="n">task</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">InterruptedException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Thread</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Thread</span><span class="p">(</span><span class="n">task</span><span class="p">),</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Thread</span><span class="p">(</span><span class="n">task</span><span class="p">);</span>
+<span class="w">        </span><span class="n">a</span><span class="p">.</span><span class="na">start</span><span class="p">();</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="na">start</span><span class="p">();</span>
+<span class="w">        </span><span class="n">a</span><span class="p">.</span><span class="na">join</span><span class="p">();</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="na">join</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="cmd">java -cp out lms.RaceDemo</div>
+<div class="out">Expected      : 2000000
+Unsynchronized: 1879824  &lt;-- updates were lost
+Synchronized  : 2000000</div>
+<div class="step-block"><p>The unsynchronised number differs on every run, and some runs even get lucky. Run it several times.</p>
+<h3>5. Run it</h3></div>
+<div class="cmd">java -Dlms.loan.days=0 -cp &quot;out:lib/*&quot; lms.GuiMain     # loan period 0 days: any open loan is overdue (handy for demos)</div>
+<figure><img src="img/w12-importing.png" alt="Import at 30%: you can still click rows because the EDT is free"/><figcaption>Import at 30%: you can still click rows because the EDT is free</figcaption></figure>
+<figure><img src="img/w12-done.png" alt="Ten books imported; the overdue label updates every 3 seconds"/><figcaption>Ten books imported; the overdue label updates every 3 seconds</figcaption></figure>
+<div class="step-block"><h3>6. Ship <code>v1.0</code></h3>
+<p>Add these files to the root of your repository:</p></div>
+<details class="codefile"><summary><span class="fname">pom.xml</span><span class="fcap">Maven build with the SQLite driver and a shaded runnable jar</span></summary><div class="hl"><pre><span></span><span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="nt">&lt;project</span><span class="w"> </span><span class="na">xmlns=</span><span class="s">"http://maven.apache.org/POM/4.0.0"</span>
+<span class="w">         </span><span class="na">xmlns:xsi=</span><span class="s">"http://www.w3.org/2001/XMLSchema-instance"</span>
+<span class="w">         </span><span class="na">xsi:schemaLocation=</span><span class="s">"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nt">&lt;modelVersion&gt;</span>4.0.0<span class="nt">&lt;/modelVersion&gt;</span>
+
+<span class="w">  </span><span class="nt">&lt;groupId&gt;</span>lk.ac.kln.seng12233<span class="nt">&lt;/groupId&gt;</span>
+<span class="w">  </span><span class="nt">&lt;artifactId&gt;</span>lms<span class="nt">&lt;/artifactId&gt;</span>
+<span class="w">  </span><span class="nt">&lt;version&gt;</span>1.0<span class="nt">&lt;/version&gt;</span>
+<span class="w">  </span><span class="nt">&lt;packaging&gt;</span>jar<span class="nt">&lt;/packaging&gt;</span>
+<span class="w">  </span><span class="nt">&lt;name&gt;</span>Library<span class="w"> </span>Management<span class="w"> </span>System<span class="nt">&lt;/name&gt;</span>
+
+<span class="w">  </span><span class="nt">&lt;properties&gt;</span>
+<span class="w">    </span><span class="nt">&lt;maven.compiler.release&gt;</span>21<span class="nt">&lt;/maven.compiler.release&gt;</span>
+<span class="w">    </span><span class="nt">&lt;project.build.sourceEncoding&gt;</span>UTF-8<span class="nt">&lt;/project.build.sourceEncoding&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/properties&gt;</span>
+
+<span class="w">  </span><span class="nt">&lt;dependencies&gt;</span>
+<span class="w">    </span><span class="nt">&lt;dependency&gt;</span>
+<span class="w">      </span><span class="nt">&lt;groupId&gt;</span>org.xerial<span class="nt">&lt;/groupId&gt;</span>
+<span class="w">      </span><span class="nt">&lt;artifactId&gt;</span>sqlite-jdbc<span class="nt">&lt;/artifactId&gt;</span>
+<span class="w">      </span><span class="nt">&lt;version&gt;</span>3.46.0.0<span class="nt">&lt;/version&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/dependency&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/dependencies&gt;</span>
+
+<span class="w">  </span><span class="nt">&lt;build&gt;</span>
+<span class="w">    </span><span class="nt">&lt;sourceDirectory&gt;</span>src<span class="nt">&lt;/sourceDirectory&gt;</span>
+<span class="w">    </span><span class="nt">&lt;plugins&gt;</span>
+<span class="w">      </span><span class="cm">&lt;!-- Builds ONE runnable jar that includes the SQLite driver: mvn package, then java -jar target/lms-1.0-shaded.jar --&gt;</span>
+<span class="w">      </span><span class="nt">&lt;plugin&gt;</span>
+<span class="w">        </span><span class="nt">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
+<span class="w">        </span><span class="nt">&lt;artifactId&gt;</span>maven-shade-plugin<span class="nt">&lt;/artifactId&gt;</span>
+<span class="w">        </span><span class="nt">&lt;version&gt;</span>3.5.1<span class="nt">&lt;/version&gt;</span>
+<span class="w">        </span><span class="nt">&lt;executions&gt;</span>
+<span class="w">          </span><span class="nt">&lt;execution&gt;</span>
+<span class="w">            </span><span class="nt">&lt;phase&gt;</span>package<span class="nt">&lt;/phase&gt;</span>
+<span class="w">            </span><span class="nt">&lt;goals&gt;&lt;goal&gt;</span>shade<span class="nt">&lt;/goal&gt;&lt;/goals&gt;</span>
+<span class="w">            </span><span class="nt">&lt;configuration&gt;</span>
+<span class="w">              </span><span class="nt">&lt;shadedArtifactAttached&gt;</span>true<span class="nt">&lt;/shadedArtifactAttached&gt;</span>
+<span class="w">              </span><span class="nt">&lt;shadedClassifierName&gt;</span>shaded<span class="nt">&lt;/shadedClassifierName&gt;</span>
+<span class="w">              </span><span class="nt">&lt;transformers&gt;</span>
+<span class="w">                </span><span class="nt">&lt;transformer</span><span class="w"> </span><span class="na">implementation=</span><span class="s">"org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"</span><span class="nt">&gt;</span>
+<span class="w">                  </span><span class="nt">&lt;mainClass&gt;</span>lms.GuiMain<span class="nt">&lt;/mainClass&gt;</span>
+<span class="w">                </span><span class="nt">&lt;/transformer&gt;</span>
+<span class="w">                </span><span class="nt">&lt;transformer</span><span class="w"> </span><span class="na">implementation=</span><span class="s">"org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"</span><span class="nt">/&gt;</span>
+<span class="w">              </span><span class="nt">&lt;/transformers&gt;</span>
+<span class="w">            </span><span class="nt">&lt;/configuration&gt;</span>
+<span class="w">          </span><span class="nt">&lt;/execution&gt;</span>
+<span class="w">        </span><span class="nt">&lt;/executions&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/plugin&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/plugins&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/build&gt;</span>
+<span class="nt">&lt;/project&gt;</span>
+</pre></div>
+</details>
+<details class="codefile"><summary><span class="fname">build.sh</span><span class="fcap">Build without Maven</span></summary><div class="hl"><pre><span></span><span class="ch">#!/usr/bin/env bash</span>
+<span class="c1"># Builds lms.jar without Maven. Needs JDK 17+ and lib/sqlite-jdbc-*.jar</span>
+<span class="nb">set</span><span class="w"> </span>-e
+rm<span class="w"> </span>-rf<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>build/classes
+javac<span class="w"> </span>-d<span class="w"> </span>build/classes<span class="w"> </span><span class="k">$(</span>find<span class="w"> </span>src<span class="w"> </span>-name<span class="w"> </span><span class="s2">"*.java"</span><span class="k">)</span>
+<span class="nb">printf</span><span class="w"> </span><span class="s1">'Main-Class: lms.GuiMain\nClass-Path: lib/sqlite-jdbc.jar\n'</span><span class="w"> </span>&gt;<span class="w"> </span>build/manifest.txt
+jar<span class="w"> </span>cfm<span class="w"> </span>build/lms.jar<span class="w"> </span>build/manifest.txt<span class="w"> </span>-C<span class="w"> </span>build/classes<span class="w"> </span>.
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Built build/lms.jar"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Run with:  java -jar build/lms.jar   (keep a copy of the driver at build/lib/sqlite-jdbc.jar)"</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>build/lib<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>cp<span class="w"> </span>lib/sqlite-jdbc-*.jar<span class="w"> </span>build/lib/sqlite-jdbc.jar<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"WARNING: put sqlite-jdbc-*.jar in lib/ first"</span>
+</pre></div>
+</details>
+<details class="codefile"><summary><span class="fname">README.md</span><span class="fcap">Fill in your name and index</span></summary><div class="hl"><pre><span></span># Library Management System (SENG 12233)
+
+A desktop Library Management System written in Java 21 with Swing and SQLite.
+
+## Features
+- Catalogue of Books, DVDs and Magazines (inheritance, abstract class, interfaces)
+- Members: Students (3 items) and Staff (10 items)
+- Borrow / return with clear error messages (custom exceptions)
+- Search, loan report (generics + streams)
+- Everything is saved in `lms.db` (JDBC, DAO pattern)
+- Background import with a progress bar; overdue checker thread
+
+## Run
+**With Maven**
+```bash
+mvn package
+java -jar target/lms-1.0-shaded.jar
+```
+**Without Maven** (download `sqlite-jdbc-3.46.0.0.jar` into `lib/` first)
+```bash
+./build.sh
+java -jar build/lms.jar
+```
+
+## Architecture
+```
+lms.model    - Book, DVD, Magazine, Member, ...   (MODEL)
+lms.ui       - MainFrame, ImportWorker            (VIEW)
+lms.service  - LibraryController, Library, ...    (CONTROLLER + business rules)
+lms.dao      - Database, ItemDAO, MemberDAO, LoanDAO
+lms.exception- ItemNotAvailableException, MemberNotFoundException, DataAccessException
+```
+
+## Author
+&lt;your name&gt; - &lt;your index number&gt;
+</pre></div>
+</details>
+<details class="codefile"><summary><span class="fname">.gitignore</span></summary><div class="hl"><pre><span></span>out/
+build/
+target/
+*.class
+lms.db
+*.jar
+!lib/.gitkeep
+.idea/
+*.iml
+.vscode/
+</pre></div>
+</details>
+<div class="step-block"><p>Build, run and tag:</p>
+<pre><code class="language-bash">mvn package
+java -jar target/lms-1.0-shaded.jar
+
+git tag v1.0
+git push origin v1.0
+</code></pre>
+<div class="callout warn"><p><strong>Warning</strong> Test the jar on a <strong>clean copy</strong> of your repository (clone it fresh into another folder). <em>"It works on my machine"</em> is not a release.</p>
+</div>
+<h3>Final checklist</h3>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Git</td>
+<td>All nine PRs merged, <code>main</code> builds, tag <code>v1.0</code> on GitHub</td>
+</tr>
+<tr>
+<td>MVC</td>
+<td>View → Controller → Model/DAO; no SQL outside <code>lms.dao</code></td>
+</tr>
+<tr>
+<td>Errors</td>
+<td>Every failure path shows a message; nothing crashes</td>
+</tr>
+<tr>
+<td>Quality</td>
+<td>No dead code, no <code>System.out</code> in the model, clear names</td>
+</tr>
+<tr>
+<td>Docs</td>
+<td>README with run instructions and screenshot; UML for each week</td>
+</tr>
+<tr>
+<td>Demo</td>
+<td>5 to 10 minutes, rehearsed once</td>
+</tr>
+</tbody>
+</table></div>
+<div class="step-block"><h3>Checkpoint: is it done?</h3><ul class="checklist"><li>The window stays responsive while the import runs</li><li><code>RaceDemo</code> shows lost updates on at least one of five runs</li><li><code>java -jar</code> starts the app from a clean clone</li><li>Tag <code>v1.0</code> pushed; all PRs merged; README complete</li></ul></div><div class="pager"><a href="step08_jdbc.html"><button class="btn btn-secondary">← Step 08: JDBC & the Database</button></a><a href="../index.html#labs"><button class="btn btn-primary">Back to the course page →</button></a></div></div></main></div>
+<footer><p class="footer-title">SENG 12233 — Object-Oriented Programming</p><p class="footer-sub">Library Management System guide · University of Kelaniya</p>
+<div class="footer-links"><a href="index.html">Guide overview</a><a href="../index.html">Course page</a></div>
+<p class="footer-copy">© SENG 12233 · Software Engineering Teaching Unit · Faculty of Science · University of Kelaniya</p></footer>
+<script>
+const scrollBar=document.getElementById('scrollBar');
+window.addEventListener('scroll',()=>{const t=document.documentElement.scrollHeight-window.innerHeight;scrollBar.style.width=(window.scrollY/t*100)+'%';},{passive:true});
+const nav=document.getElementById('mainNav');
+window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',window.scrollY>40);},{passive:true});
+const obs=new IntersectionObserver((es)=>{es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('visible'),i*55);obs.unobserve(e.target);}});},{threshold:0.05,rootMargin:'0px 0px -30px 0px'});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+const mb=document.querySelector('.mobile-menu-btn'),nl=document.querySelector('.nav-links');
+if(mb)mb.addEventListener('click',()=>{const o=nl.style.display==='flex';nl.style.cssText=o?'':'display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:#f8f8f8;padding:1rem 1.5rem;gap:1rem;border-bottom:1px solid #e8e8e6;';});
+</script></body></html>

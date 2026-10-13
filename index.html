@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SENG 12233 Object-Oriented Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+            --white: #ffffff;
+            --off-white: #f8f8f8;
+            --cream: #f5f5f5;
+            --light-gray: #e8e8e6;
+            --medium-gray: #999999;
+            --dark-gray: #4a4a4a;
+            --charcoal: #2a2a2a;
+            --black: #1a1a1a;
+            --accent: #8b7355;
+            --accent-light: #c4b5a0;
+            --accent-pale: #e8dfd4;
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-sans: 'Source Sans 3', -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--off-white);
+            color: var(--charcoal);
+            line-height: 1.7;
+            font-weight: 300;
+            overflow-x: hidden;
+        }
+
+        ::selection { background: var(--accent-light); color: var(--black); }
+        a { text-decoration: none; color: inherit; }
+        button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+        /* ── Scroll Progress ── */
+        .scroll-progress {
+            position: fixed; top: 0; left: 0;
+            height: 2px; background: var(--accent);
+            z-index: 1001; transition: width 0.1s ease;
+        }
+
+        /* ── Navigation ── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            padding: 1.2rem 4rem;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(248, 248, 248, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid transparent;
+            transition: all 0.4s ease;
+        }
+        nav.scrolled { border-bottom: 1px solid var(--light-gray); padding: 0.8rem 4rem; }
+        .nav-left { display: flex; align-items: center; gap: 2rem; }
+        .nav-logo { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 400; letter-spacing: 0.02em; color: var(--black); }
+        .nav-logo span { color: var(--accent); }
+        .nav-back { font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--medium-gray); transition: color 0.3s ease; display: flex; align-items: center; gap: 0.4rem; }
+        .nav-back:hover { color: var(--accent); }
+        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+        .nav-links a { font-size: 0.8rem; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dark-gray); position: relative; transition: color 0.3s ease; }
+        .nav-links a::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1px; background: var(--accent); transition: width 0.3s ease; }
+        .nav-links a:hover { color: var(--black); }
+        .nav-links a:hover::after { width: 100%; }
+        .nav-links a.active { color: var(--accent); }
+        .nav-links a.active::after { width: 100%; }
+        .mobile-menu-btn { display: none; padding: 0.5rem; }
+        .mobile-menu-btn span { display: block; width: 22px; height: 1.5px; background: var(--black); margin: 5px 0; transition: all 0.3s ease; }
+
+        /* ── Hero ── */
+        .hero {
+            padding: 10rem 4rem 4rem; text-align: center; position: relative;
+            background: linear-gradient(180deg, #f8f8f8 0%, #f2f2f2 100%);
+        }
+        .hero::before {
+            content: ''; position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 400px;
+            background: radial-gradient(circle, var(--accent-light) 0%, transparent 70%);
+            opacity: 0.12; filter: blur(80px);
+        }
+        .hero-label { font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; font-weight: 500; }
+        .hero h1 { font-family: var(--font-serif); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 300; line-height: 1.15; color: var(--black); margin-bottom: 1rem; letter-spacing: -0.02em; }
+        .hero h1 em { font-style: italic; color: var(--accent); }
+        .hero-description { font-size: 1.05rem; color: var(--dark-gray); max-width: 600px; margin: 0 auto 2rem; line-height: 1.8; }
+        .hero-meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; }
+        .meta-tag { padding: 0.45rem 1rem; background: rgba(255,255,255,0.8); border: 1px solid var(--light-gray); font-size: 0.72rem; letter-spacing: 0.05em; color: var(--dark-gray); transition: all 0.3s ease; }
+        .meta-tag:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Progress Bar ── */
+        .progress-section { max-width: 600px; margin: 2rem auto 0; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--medium-gray); margin-bottom: 0.5rem; }
+        .progress-label-value { color: var(--accent); font-weight: 500; }
+        .progress-bar { width: 100%; height: 3px; background: var(--light-gray); overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); transition: width 0.8s ease; }
+
+        /* ── Module Band ── */
+        .module-band {
+            background: var(--black);
+            padding: 0.75rem 4rem;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 0.5rem;
+        }
+        .module-band-left { font-size: 0.72rem; letter-spacing: 0.06em; color: var(--medium-gray); }
+        .module-band-left strong { color: var(--accent); font-weight: 500; }
+        .module-band-right { display: flex; gap: 1.5rem; }
+        .module-band-right a { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.4); transition: color 0.3s; }
+        .module-band-right a:hover { color: var(--white); }
+
+        /* ── Layout ── */
+        .layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; max-width: 1400px; margin: 0 auto; }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            padding: 2rem 1.5rem; border-right: 1px solid var(--light-gray);
+            position: sticky; top: 60px; height: calc(100vh - 60px);
+            overflow-y: auto; background: var(--off-white);
+        }
+        .sidebar::-webkit-scrollbar { width: 3px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--light-gray); }
+        .sidebar-title { font-family: var(--font-serif); font-size: 1rem; font-weight: 400; color: var(--black); margin-bottom: 0.3rem; }
+        .sidebar-desc { font-size: 0.75rem; color: var(--medium-gray); margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--light-gray); line-height: 1.5; }
+        .sidebar-section { margin-bottom: 1.5rem; }
+        .sidebar-section-label { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 500; }
+        .sidebar-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; font-size: 0.78rem; color: var(--dark-gray); cursor: pointer; transition: color 0.2s ease; }
+        .sidebar-item:hover { color: var(--accent); }
+        .sidebar-check { font-size: 0.65rem; color: var(--accent); min-width: 14px; }
+        .sidebar-lock { font-size: 0.65rem; color: var(--light-gray); min-width: 14px; }
+        .sidebar-nav-links { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--light-gray); }
+        .sidebar-nav-link { display: block; padding: 0.4rem 0; font-size: 0.8rem; color: var(--dark-gray); transition: color 0.2s ease; }
+        .sidebar-nav-link:hover { color: var(--accent); }
+        .sidebar-nav-link.active { color: var(--accent); font-weight: 500; }
+
+        /* ── Main Content ── */
+        .main-content { padding: 2.5rem 3rem; min-height: 100vh; }
+
+        /* ── Section Headers ── */
+        .section-header { margin-bottom: 1.5rem; }
+        .section-label { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem; font-weight: 500; }
+        .section-title { font-family: var(--font-serif); font-size: clamp(1.4rem, 2.5vw, 1.8rem); font-weight: 300; color: var(--black); letter-spacing: -0.01em; }
+
+        /* ── Overview Card ── */
+        .overview-card { background: #f2f2f2; padding: 1.5rem; margin-bottom: 2.5rem; border-left: 3px solid var(--accent); }
+        .overview-card p { font-size: 0.9rem; color: var(--dark-gray); line-height: 1.7; margin-bottom: 0.5rem; }
+        .overview-card p:last-child { margin-bottom: 0; }
+        .overview-card strong { color: var(--black); font-weight: 500; }
+
+        /* ── Part Divider ── */
+        .part-divider { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; margin: 2.5rem 0 1.5rem; border-bottom: 1px solid var(--light-gray); }
+        .part-divider-num { font-family: var(--font-serif); font-size: 2rem; font-weight: 300; color: var(--accent-light); font-style: italic; line-height: 1; }
+        .part-divider-content h3 { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 400; color: var(--black); }
+        .part-divider-content p { font-size: 0.72rem; color: var(--medium-gray); letter-spacing: 0.03em; }
+
+        /* ── Lectures Grid ── */
+        .lectures-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.2rem; margin-bottom: 1.5rem; }
+
+        /* ── Lecture Card ── */
+        .lecture-card { background: var(--white); border: 1px solid var(--light-gray); transition: all 0.4s ease; position: relative; overflow: hidden; }
+        .lecture-card::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 0; background: var(--accent); transition: height 0.4s ease; }
+        .lecture-card:hover { border-color: var(--accent-light); box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+        .lecture-card:hover::before { height: 100%; }
+        .lecture-card-header { padding: 1.2rem 1.5rem 0.8rem; display: flex; justify-content: space-between; align-items: flex-start; }
+        .lecture-num { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 300; color: var(--light-gray); line-height: 1; font-style: italic; transition: color 0.3s ease; }
+        .lecture-card:hover .lecture-num { color: var(--accent-light); }
+        .lecture-title { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 400; color: var(--black); line-height: 1.35; margin-bottom: 0.2rem; }
+        .lecture-subtitle { font-size: 0.78rem; color: var(--medium-gray); }
+        .lecture-ref { font-size: 0.68rem; color: var(--accent); margin-top: 0.3rem; letter-spacing: 0.03em; }
+        .lecture-card-body { padding: 0 1.5rem 1.2rem; }
+        .topics-list { list-style: none; margin-bottom: 1rem; }
+        .topics-list li { padding: 0.3rem 0 0.3rem 1.2rem; position: relative; font-size: 0.82rem; color: var(--dark-gray); border-bottom: 1px solid #fafafa; line-height: 1.5; }
+        .topics-list li:last-child { border-bottom: none; }
+        .topics-list li::before { content: '→'; position: absolute; left: 0; color: var(--accent-light); font-size: 0.72rem; }
+        .lecture-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+        /* ── Buttons ── */
+        .btn { padding: 0.45rem 1rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.4rem; }
+        .btn-primary { background: var(--accent); color: var(--white); }
+        .btn-primary:hover { background: var(--charcoal); }
+        .btn-secondary { background: transparent; color: var(--dark-gray); border: 1px solid var(--light-gray); }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Assessments ── */
+        .assessments-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.2rem; margin-top: 1.5rem; }
+        .assessment-card { background: var(--white); border: 1px solid var(--light-gray); padding: 1.5rem; transition: all 0.4s ease; position: relative; overflow: hidden; }
+        .assessment-card::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 0; background: var(--accent); transition: height 0.4s ease; }
+        .assessment-card:hover { border-color: var(--accent-light); box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+        .assessment-card:hover::before { height: 100%; }
+        .assessment-type { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 500; }
+        .assessment-title { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 400; color: var(--black); margin-bottom: 0.4rem; line-height: 1.3; }
+        .assessment-meta { font-size: 0.78rem; color: var(--medium-gray); margin-bottom: 0.8rem; }
+        .assessment-desc { font-size: 0.83rem; color: var(--dark-gray); line-height: 1.65; margin-bottom: 1rem; }
+        .assessment-tasks { list-style: none; margin-bottom: 1rem; }
+        .assessment-tasks li { padding: 0.3rem 0 0.3rem 1.2rem; position: relative; font-size: 0.8rem; color: var(--dark-gray); border-bottom: 1px solid #fafafa; }
+        .assessment-tasks li:last-child { border-bottom: none; }
+        .assessment-tasks li::before { content: '→'; position: absolute; left: 0; color: var(--accent-light); font-size: 0.72rem; }
+        .assessment-weight { display: inline-block; padding: 0.3rem 0.8rem; background: var(--accent-pale); color: var(--accent); font-size: 0.7rem; letter-spacing: 0.05em; font-weight: 500; }
+
+        /* ── Resources Section ── */
+        .resources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+        .resource-card { padding: 1.5rem; background: #f2f2f2; text-align: center; transition: all 0.3s ease; }
+        .resource-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
+        .resource-icon { font-size: 1.5rem; margin-bottom: 0.6rem; }
+        .resource-card h3 { font-family: var(--font-serif); font-size: 0.95rem; font-weight: 400; color: var(--black); margin-bottom: 0.25rem; }
+        .resource-card h3 a { color: inherit; transition: color 0.3s; }
+        .resource-card h3 a:hover { color: var(--accent); }
+        .resource-card p { font-size: 0.72rem; color: var(--medium-gray); }
+
+        /* ── Learning Path ── */
+        .learning-path { margin-top: 1.5rem; }
+        .path-item { display: flex; gap: 1rem; padding: 0.8rem 0; border-bottom: 1px solid var(--light-gray); }
+        .path-item:last-child { border-bottom: none; }
+        .path-phase { font-family: var(--font-serif); font-size: 0.9rem; font-style: italic; color: var(--accent); min-width: 60px; }
+        .path-desc { font-size: 0.85rem; color: var(--dark-gray); line-height: 1.6; }
+        .path-desc strong { color: var(--black); font-weight: 500; }
+
+        /* ── Course Structure ── */
+        .course-structure { margin-top: 2rem; padding: 1.5rem; background: #f2f2f2; border-left: 3px solid var(--accent); }
+        .course-structure p { font-size: 0.85rem; color: var(--dark-gray); margin-bottom: 0.5rem; line-height: 1.7; }
+        .course-structure p:last-child { margin-bottom: 0; }
+        .course-structure strong { color: var(--black); font-weight: 500; }
+
+        /* ── Footer ── */
+        footer { background: var(--black); color: var(--white); text-align: center; padding: 2.5rem 4rem; }
+        .footer-title { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 400; margin-bottom: 0.3rem; }
+        .footer-sub { font-size: 0.72rem; color: var(--medium-gray); margin-bottom: 1rem; }
+        .footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
+        .footer-links a { font-size: 0.75rem; color: var(--medium-gray); letter-spacing: 0.04em; transition: color 0.3s ease; }
+        .footer-links a:hover { color: var(--white); }
+        .footer-copy { font-size: 0.65rem; color: var(--medium-gray); margin-top: 1.2rem; opacity: 0.6; }
+
+        /* ── Animations ── */
+        .fade-in { opacity: 0; transform: translateY(12px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+        /* ── Responsive ── */
+        @media (max-width: 1024px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .main-content { padding: 2rem; }
+        }
+        @media (max-width: 768px) {
+            nav { padding: 1rem 1.5rem; }
+            .nav-links { display: none; }
+            .mobile-menu-btn { display: block; }
+            .hero { padding: 8rem 1.5rem 3rem; }
+            .main-content { padding: 1.5rem; }
+            .lectures-grid { grid-template-columns: 1fr; }
+            .assessments-grid { grid-template-columns: 1fr; }
+            .hero-meta { flex-direction: column; align-items: center; }
+            .resources-grid { grid-template-columns: 1fr 1fr; }
+            .module-band { padding: 0.75rem 1.5rem; }
+            footer { padding: 2rem 1.5rem; }
+        }
+        @media (max-width: 480px) { .resources-grid { grid-template-columns: 1fr; } }
+
+.lecture-card code{font-family:'DejaVu Sans Mono',Consolas,monospace;font-size:.78em;background:#efece6;padding:.05rem .3rem}
+.course-structure code{font-family:'DejaVu Sans Mono',Consolas,monospace;font-size:.82em;background:#e6e2da;padding:.05rem .3rem}
+
+</style></head><body>
+<div class="scroll-progress" id="scrollBar"></div>
+<nav id="mainNav"><div class="nav-left"><div class="nav-logo">SENG<span>.</span>12233</div><a class="nav-back" href="https://tiroshanm.github.io/">← Portfolio</a></div>
+<ul class="nav-links"><li><a href="#lectures" class="active">Lectures</a></li><li><a href="#labs">Labs</a></li><li><a href="#lms">LMS Guide</a></li><li><a href="#git">Git</a></li><li><a href="#assessments">Assessments</a></li><li><a href="#resources">Resources</a></li><li><a href="#about">About</a></li></ul>
+<button class="mobile-menu-btn" aria-label="Menu"><span></span><span></span><span></span></button></nav>
+
+<section class="hero">
+  <p class="hero-label">University of Kelaniya · Software Engineering Teaching Unit</p>
+  <h1>Object-Oriented <em>Programming</em></h1>
+  <p class="hero-description">Learn to think in objects. Over twelve weeks you will build one real application, a Library Management System, growing it from a single class into a windowed, database-backed, multi-threaded program in Java.</p>
+  <div class="hero-meta"><span class="meta-tag">Eng. Dr. Tiroshan Madushanka</span><span class="meta-tag">12 Weeks</span><span class="meta-tag">9 Labs</span><span class="meta-tag">Java 21</span><span class="meta-tag">Year 1 SE</span></div>
+  <div class="progress-section"><div class="progress-label"><span>Course Progress</span><span class="progress-label-value" id="progressText">0 / 12 Weeks</span></div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div></div>
+</section>
+
+<div class="layout">
+  <aside class="sidebar">
+    <p class="sidebar-title">SENG 12233</p>
+    <p class="sidebar-desc">Object-Oriented Programming<br>Year 1 BSc Software Engineering</p>
+    <div class="sidebar-nav-links">
+      <a class="sidebar-nav-link active" href="#lectures">Lectures</a><a class="sidebar-nav-link" href="#labs">Labs</a><a class="sidebar-nav-link" href="#lms">LMS Guide</a><a class="sidebar-nav-link" href="#git">Git Support</a><a class="sidebar-nav-link" href="#assessments">Assessments</a><a class="sidebar-nav-link" href="#resources">Resources</a><a class="sidebar-nav-link" href="#about">About</a>
+    </div>
+    <div class="sidebar-section"><p class="sidebar-section-label">Part I — Foundations of OOP</p><div class="sidebar-item"><span class="sidebar-check">○</span> L01 · Introduction to OOP &amp; Git</div><div class="sidebar-item"><span class="sidebar-check">○</span> L02 · Classes, Objects &amp; Encapsulation</div><div class="sidebar-item"><span class="sidebar-check">○</span> L03 · Inheritance &amp; Polymorphism</div><div class="sidebar-item"><span class="sidebar-check">○</span> L04 · Abstract Classes &amp; Interfaces</div><div class="sidebar-item"><span class="sidebar-check">○</span> L05 · Exception Handling</div></div><div class="sidebar-section"><p class="sidebar-section-label">Part II — Review & Midterm</p><div class="sidebar-item"><span class="sidebar-check">○</span> L06 · Consolidation &amp; Review</div><div class="sidebar-item"><span class="sidebar-check">○</span> L07 · Midterm Briefing</div></div><div class="sidebar-section"><p class="sidebar-section-label">Part III — Graphical Interfaces</p><div class="sidebar-item"><span class="sidebar-check">○</span> L08 · GUI I</div><div class="sidebar-item"><span class="sidebar-check">○</span> L09 · GUI II: Events &amp; MVC</div></div><div class="sidebar-section"><p class="sidebar-section-label">Part IV — Data, Persistence & Concurrency</p><div class="sidebar-item"><span class="sidebar-check">○</span> L10 · Generics, Collections &amp; Streams</div><div class="sidebar-item"><span class="sidebar-check">○</span> L11 · JDBC</div><div class="sidebar-item"><span class="sidebar-check">○</span> L12 · Multithreading &amp; Final Integration</div></div>
+  </aside>
+
+  <main class="main-content">
+    <section id="overview">
+      <div class="section-header fade-in"><p class="section-label">Course Overview</p><h2 class="section-title">What you will learn</h2></div>
+      <div class="overview-card fade-in">
+        <p><strong>SENG 12233 Object-Oriented Programming</strong> is a compulsory 3-credit Year 1 course. It builds on SENG 11223 Programming Concepts and teaches you to design programs as collaborating objects, using Java.</p>
+        <p>Every lecture adds a feature to the same <strong>Library Management System (LMS)</strong>. You meet each new idea twice: first in the lecture notes and slides, then in a weekly lab where you add it to your own copy of the project and commit it with Git.</p>
+        <p><strong>12 Lectures · 9 Labs · 1 Midterm · 1 Final Project</strong></p>
+        <p><strong>Learning outcomes.</strong> After this course you can:<br/>
+        <strong>LO1</strong> write Java programs using classes, objects and methods;<br/>
+        <strong>LO2</strong> use Git to keep a project history and work on branches;<br/>
+        <strong>LO3</strong> apply encapsulation, inheritance, polymorphism, abstraction, exceptions and generics;<br/>
+        <strong>LO4</strong> build a graphical interface with Swing events and the MVC pattern;<br/>
+        <strong>LO5</strong> store and retrieve data with JDBC.</p>
+      </div>
+    </section>
+
+    <section id="lectures">
+      <div class="part-divider fade-in"><div class="part-divider-num">I</div><div class="part-divider-content"><h3>Foundations of OOP</h3><p>Lectures 01 – 05 · Classes, inheritance, abstraction and exceptions</p></div></div>
+      <div class="lectures-grid">
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Introduction to OOP &amp; Git</div><div class="lecture-subtitle">Why objects? Your first class, and version control from day one</div>
+            <div class="lecture-ref">L01 · Week 1 · 3 h</div></div><div class="lecture-num">01</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>Procedural vs object-oriented thinking: the four pillars at a glance</li><li>Classes, objects, fields, methods and constructors</li><li>Running Java: javac, java and your IDE</li><li>Git essentials: init, add, commit, branch, push, pull request</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN01_Introduction_to_OOP.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L01_Introduction_to_OOP.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Classes, Objects &amp; Encapsulation</div><div class="lecture-subtitle">Protect your data: private fields, getters, validation</div>
+            <div class="lecture-ref">L02 · Week 2 · Lab 1</div></div><div class="lecture-num">02</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>Designing a class: state and behaviour</li><li>private fields, public methods, validation in setters</li><li>this, static members and object references</li><li>Starting the LMS: Book, Member and Library</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN02_Classes_Objects_Encapsulation.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L02_Classes_Objects_Encapsulation.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Inheritance &amp; Polymorphism</div><div class="lecture-subtitle">Reuse with extends; let the object decide at run time</div>
+            <div class="lecture-ref">L03 · Week 3 · Lab 2</div></div><div class="lecture-num">03</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>extends, super, constructor chaining</li><li>Overriding vs overloading; @Override</li><li>Static vs dynamic binding; upcasting and instanceof</li><li>LMS: LibraryItem with Book, DVD and Magazine</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN03_Inheritance_and_Polymorphism.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L03_Inheritance_and_Polymorphism.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Abstract Classes &amp; Interfaces</div><div class="lecture-subtitle">Contracts that classes promise to keep</div>
+            <div class="lecture-ref">L04 · Week 4 · Lab 3</div></div><div class="lecture-num">04</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>abstract classes and methods</li><li>interfaces, default methods, multiple interfaces</li><li>Choosing between abstract class and interface</li><li>LMS: Loanable, Reservable and Comparable&lt;Member&gt;</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN04_Abstract_Classes_and_Interfaces.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L04_Abstract_Classes_and_Interfaces.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Exception Handling</div><div class="lecture-subtitle">When things go wrong: fail loudly and recover politely</div>
+            <div class="lecture-ref">L05 · Week 5 · Lab 4</div></div><div class="lecture-num">05</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>try, catch, finally and try-with-resources</li><li>Checked vs unchecked exceptions</li><li>Writing your own exception classes</li><li>LMS: ItemNotAvailableException and MemberNotFoundException</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN05_Exception_Handling.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L05_Exception_Handling.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+      </div>
+      <div class="part-divider fade-in"><div class="part-divider-num">II</div><div class="part-divider-content"><h3>Review & Midterm</h3><p>Lectures 06 – 07 · Consolidate before the in-class midterm</p></div></div>
+      <div class="lectures-grid">
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Consolidation &amp; Review</div><div class="lecture-subtitle">Join the pieces; practise before the midterm</div>
+            <div class="lecture-ref">L06 · Week 6 · No lab</div></div><div class="lecture-num">06</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>Concept map of Weeks 1–5</li><li>Worked mini-problems that mix inheritance, interfaces and exceptions</li><li>Reading code and predicting output</li><li>Common mistakes and how the compiler reports them</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN06_Consolidation_and_Review.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L06_Consolidation_and_Review.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Midterm Briefing</div><div class="lecture-subtitle">Format, topics and a sample paper</div>
+            <div class="lecture-ref">L07 · Week 7 · In-class midterm</div></div><div class="lecture-num">07</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>What is examined and what is not</li><li>Sample questions with worked answers</li><li>Time management and checking habits</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN07_Midterm_Briefing.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L07_Midterm_Briefing.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+      </div>
+      <div class="part-divider fade-in"><div class="part-divider-num">III</div><div class="part-divider-content"><h3>Graphical Interfaces</h3><p>Lectures 08 – 09 · Swing, events and the MVC pattern</p></div></div>
+      <div class="lectures-grid">
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">GUI I: Swing Layouts &amp; Widgets</div><div class="lecture-subtitle">Give the LMS a window</div>
+            <div class="lecture-ref">L08 · Week 8 · Lab 5</div></div><div class="lecture-num">08</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>JFrame, JPanel and the common widgets</li><li>BorderLayout, FlowLayout, GridLayout and nesting</li><li>JTable and DefaultTableModel</li><li>Starting Swing on the Event Dispatch Thread</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN08_GUI_I_Swing_Layouts.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L08_GUI_I_Swing_Layouts.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">GUI II: Events &amp; MVC</div><div class="lecture-subtitle">Make buttons work, and keep the layers apart</div>
+            <div class="lecture-ref">L09 · Week 9 · Lab 6</div></div><div class="lecture-num">09</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>Listeners and lambdas</li><li>JOptionPane for results and errors</li><li>Model, View and Controller</li><li>LMS: LibraryController connects window and model</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN09_GUI_II_Events_and_MVC.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L09_GUI_II_Events_and_MVC.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+      </div>
+      <div class="part-divider fade-in"><div class="part-divider-num">IV</div><div class="part-divider-content"><h3>Data, Persistence & Concurrency</h3><p>Lectures 10 – 12 · Generics, streams, JDBC and threads</p></div></div>
+      <div class="lectures-grid">
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Generics, Collections &amp; Streams</div><div class="lecture-subtitle">One Repository&lt;T&gt; for everything</div>
+            <div class="lecture-ref">L10 · Week 10 · Lab 7</div></div><div class="lecture-num">10</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>Generic classes and type parameters</li><li>List, Set and Map: choosing well</li><li>Optional and lambdas</li><li>Streams: filter, map, sorted, groupingBy</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN10_Generics_Collections_Streams.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L10_Generics_Collections_Streams.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">JDBC: Database Connectivity</div><div class="lecture-subtitle">The LMS remembers between runs</div>
+            <div class="lecture-ref">L11 · Week 11 · Lab 8</div></div><div class="lecture-num">11</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>Tables, keys and SQL basics</li><li>Connection, PreparedStatement and ResultSet</li><li>SQL injection and why placeholders matter</li><li>The DAO pattern and a three-table JOIN</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN11_JDBC_Database_Connectivity.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L11_JDBC_Database_Connectivity.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Multithreading &amp; Final Integration</div><div class="lecture-subtitle">Responsive windows, safe shared data, and shipping v1.0</div>
+            <div class="lecture-ref">L12 · Week 12 · Lab 9</div></div><div class="lecture-num">12</div></div>
+          <div class="lecture-card-body"><ul class="topics-list"><li>Threads, SwingWorker and the EDT</li><li>Daemon threads and invokeLater</li><li>Race conditions and synchronized</li><li>Final project, demo and README</li></ul>
+            <div class="lecture-actions">
+              <a href="notes/LN12_Multithreading_and_Final_Integration.pdf"><button class="btn btn-primary">↓ Notes</button></a>
+              <a href="slides/L12_Multithreading_and_Final_Integration.pptx"><button class="btn btn-secondary">Slides</button></a>
+            </div></div></div>
+      </div>
+    </section>
+
+    <section id="labs" style="margin-top:3rem;">
+      <div class="section-header fade-in"><p class="section-label">Weekly Labs</p><h2 class="section-title">Lab sheets</h2></div>
+      <div class="overview-card fade-in"><p>Each lab sheet lists the goal, the steps, a checklist and what to submit. Work on a new Git branch named as shown, and open a pull request when you finish. Weeks 1, 6 and 7 have no lab sheet: Week 1 is the Git guide, Week 6 is review and Week 7 is the midterm.</p></div>
+      <div class="lectures-grid" style="margin-top:1.5rem;">
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Classes, Objects &amp; Encapsulation</div><div class="lecture-subtitle">Branch <code>week2-encapsulation</code></div>
+            <div class="lecture-ref">Lab 1 · Week 2 · LO1, LO3</div></div><div class="lecture-num">01</div></div>
+          <div class="lecture-card-body"><div class="lecture-actions">
+            <a href="labs/LAB01_Classes_Objects_Encapsulation.pdf"><button class="btn btn-primary">↓ Lab sheet</button></a>
+            <a href="lms-guide/step01_encapsulation.html"><button class="btn btn-secondary">LMS step 01</button></a>
+          </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Inheritance &amp; Polymorphism</div><div class="lecture-subtitle">Branch <code>week3-inheritance-polymorphism</code></div>
+            <div class="lecture-ref">Lab 2 · Week 3 · LO3</div></div><div class="lecture-num">02</div></div>
+          <div class="lecture-card-body"><div class="lecture-actions">
+            <a href="labs/LAB02_Inheritance_and_Polymorphism.pdf"><button class="btn btn-primary">↓ Lab sheet</button></a>
+            <a href="lms-guide/step02_inheritance.html"><button class="btn btn-secondary">LMS step 02</button></a>
+          </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Abstract Classes &amp; Interfaces</div><div class="lecture-subtitle">Branch <code>week4-abstraction-interfaces</code></div>
+            <div class="lecture-ref">Lab 3 · Week 4 · LO3</div></div><div class="lecture-num">03</div></div>
+          <div class="lecture-card-body"><div class="lecture-actions">
+            <a href="labs/LAB03_Abstract_Classes_and_Interfaces.pdf"><button class="btn btn-primary">↓ Lab sheet</button></a>
+            <a href="lms-guide/step03_interfaces.html"><button class="btn btn-secondary">LMS step 03</button></a>
+          </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Exception Handling</div><div class="lecture-subtitle">Branch <code>week5-exceptions</code></div>
+            <div class="lecture-ref">Lab 4 · Week 5 · LO3</div></div><div class="lecture-num">04</div></div>
+          <div class="lecture-card-body"><div class="lecture-actions">
+            <a href="labs/LAB04_Exception_Handling.pdf"><button class="btn btn-primary">↓ Lab sheet</button></a>
+            <a href="lms-guide/step04_exceptions.html"><button class="btn btn-secondary">LMS step 04</button></a>
+          </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">GUI I: Layouts &amp; Widgets</div><div class="lecture-subtitle">Branch <code>week8-gui-layouts</code></div>
+            <div class="lecture-ref">Lab 5 · Week 8 · LO4</div></div><div class="lecture-num">05</div></div>
+          <div class="lecture-card-body"><div class="lecture-actions">
+            <a href="labs/LAB05_GUI_I_Layouts_and_Widgets.pdf"><button class="btn btn-primary">↓ Lab sheet</button></a>
+            <a href="lms-guide/step05_gui_layouts.html"><button class="btn btn-secondary">LMS step 05</button></a>
+          </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">GUI II: Events &amp; MVC</div><div class="lecture-subtitle">Branch <code>week9-gui-events-mvc</code></div>
+            <div class="lecture-ref">Lab 6 · Week 9 · LO4</div></div><div class="lecture-num">06</div></div>
+          <div class="lecture-card-body"><div class="lecture-actions">
+            <a href="labs/LAB06_GUI_II_Events_and_MVC.pdf"><button class="btn btn-primary">↓ Lab sheet</button></a>
+            <a href="lms-guide/step06_gui_events_mvc.html"><button class="btn btn-secondary">LMS step 06</button></a>
+          </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Generics, Collections &amp; Streams</div><div class="lecture-subtitle">Branch <code>week10-generics-streams</code></div>
+            <div class="lecture-ref">Lab 7 · Week 10 · LO3</div></div><div class="lecture-num">07</div></div>
+          <div class="lecture-card-body"><div class="lecture-actions">
+            <a href="labs/LAB07_Generics_Collections_Streams.pdf"><button class="btn btn-primary">↓ Lab sheet</button></a>
+            <a href="lms-guide/step07_generics_streams.html"><button class="btn btn-secondary">LMS step 07</button></a>
+          </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">JDBC</div><div class="lecture-subtitle">Branch <code>week11-jdbc</code></div>
+            <div class="lecture-ref">Lab 8 · Week 11 · LO5</div></div><div class="lecture-num">08</div></div>
+          <div class="lecture-card-body"><div class="lecture-actions">
+            <a href="labs/LAB08_JDBC.pdf"><button class="btn btn-primary">↓ Lab sheet</button></a>
+            <a href="lms-guide/step08_jdbc.html"><button class="btn btn-secondary">LMS step 08</button></a>
+          </div></div></div>
+        <div class="lecture-card fade-in">
+          <div class="lecture-card-header"><div>
+            <div class="lecture-title">Multithreading &amp; Final Integration</div><div class="lecture-subtitle">Branch <code>week12-threads-final</code></div>
+            <div class="lecture-ref">Lab 9 · Week 12 · LO3–LO5</div></div><div class="lecture-num">09</div></div>
+          <div class="lecture-card-body"><div class="lecture-actions">
+            <a href="labs/LAB09_Multithreading_and_Final.pdf"><button class="btn btn-primary">↓ Lab sheet</button></a>
+            <a href="lms-guide/step09_threads_final.html"><button class="btn btn-secondary">LMS step 09</button></a>
+          </div></div></div>
+      </div>
+    </section>
+
+    <section id="lms" style="margin-top:3rem;">
+      <div class="section-header fade-in"><p class="section-label">Library Management System</p><h2 class="section-title">Build it step by step</h2></div>
+      <div class="overview-card fade-in">
+        <p>The <strong>LMS guide</strong> walks you through the whole system in nine illustrated steps, one per lab. Each step shows the class diagram, the code to write, the command to run and the output or screenshot you should see.</p>
+        <p>Stuck? Compare with the <strong>reference solution</strong>, which contains the finished code at the end of every week and the complete final project.</p>
+        <div class="lecture-actions" style="margin-top:1rem;">
+          <a href="lms-guide/index.html"><button class="btn btn-primary">Open the LMS guide</button></a>
+          <a href="code/SENG12233_LMS_Reference_Solution.zip"><button class="btn btn-secondary">↓ Reference solution (.zip)</button></a>
+        </div>
+      </div>
+    </section>
+
+    <section id="git" style="margin-top:3rem;">
+      <div class="section-header fade-in"><p class="section-label">Git Support</p><h2 class="section-title">Version control for your labs</h2></div>
+      <div class="overview-card fade-in">
+        <p>The <strong>Git Support Guide</strong> takes you from installing Git to your first pull request, with the exact commands, a branch-per-week workflow, and fixes for the mistakes beginners meet most often.</p>
+        <div class="lecture-actions" style="margin-top:1rem;"><a href="git/Git_Support_Guide.pdf"><button class="btn btn-primary">↓ Git Support Guide</button></a><a href="notes/LN01_Introduction_to_OOP.pdf"><button class="btn btn-secondary">Week 1 notes</button></a></div>
+      </div>
+      <div class="course-structure fade-in"><p><strong>Branch naming:</strong> one branch per lab, for example <code>week2-encapsulation</code>. Commit small and often, with messages that say what changed.</p><p><strong>Rule of thumb:</strong> if the program works, commit it. If you are about to try something risky, commit first.</p></div>
+    </section>
+
+    <section id="assessments" style="margin-top:3rem;">
+      <div class="section-header fade-in"><p class="section-label">Assessments</p><h2 class="section-title">How you are assessed</h2></div>
+      <div class="assessments-grid">
+        <div class="assessment-card fade-in"><p class="assessment-type">Weekly Labs · Individual</p><h3 class="assessment-title">Lab pull requests</h3><p class="assessment-meta">Weeks 2–5 and 8–12 · Submitted as a Git pull request</p>
+          <p class="assessment-desc">Each lab is marked on the checklist in its lab sheet, on working code and on a readable Git history.</p><span class="assessment-weight">40% of Final Grade</span></div>
+        <div class="assessment-card fade-in"><p class="assessment-type">Midterm · In class</p><h3 class="assessment-title">Midterm examination</h3><p class="assessment-meta">Week 7 · Covers Weeks 1–5</p>
+          <p class="assessment-desc">Reading code, predicting output, fixing errors and writing short classes. See the Midterm Briefing for the format and a sample.</p><span class="assessment-weight">25% of Final Grade</span></div>
+        <div class="assessment-card fade-in"><p class="assessment-type">Final Project · Individual</p><h3 class="assessment-title">LMS project and demo</h3><p class="assessment-meta">Week 12 · Repository plus short demo</p>
+          <p class="assessment-desc">Your finished Library Management System, a clean README, and a short demo in which you explain one design decision.</p><span class="assessment-weight">25% of Final Grade</span></div>
+        <div class="assessment-card fade-in"><p class="assessment-type">Git Practice</p><h3 class="assessment-title">Version-control habits</h3><p class="assessment-meta">Across the semester</p>
+          <p class="assessment-desc">Regular commits, meaningful messages and one branch per lab.</p><span class="assessment-weight">10% of Final Grade</span></div>
+      </div>
+    </section>
+
+    <section id="resources" style="margin-top:3rem;">
+      <div class="section-header fade-in"><p class="section-label">Course Resources</p><h2 class="section-title">Materials &amp; references</h2></div>
+      <div class="resources-grid fade-in">
+        <div class="resource-card"><div class="resource-icon">📘</div><h3><a href="lms-guide/index.html">LMS Guide</a></h3><p>Nine illustrated steps that build the Library Management System</p></div>
+        <div class="resource-card"><div class="resource-icon">🌿</div><h3><a href="git/Git_Support_Guide.pdf">Git Support Guide</a></h3><p>Commands, workflow and troubleshooting</p></div>
+        <div class="resource-card"><div class="resource-icon">📦</div><h3><a href="code/SENG12233_LMS_Reference_Solution.zip">Reference solution</a></h3><p>Finished code for every week and the complete final project</p></div>
+        <div class="resource-card"><div class="resource-icon">☕</div><h3><a href="https://docs.oracle.com/en/java/javase/21/docs/api/" target="_blank">Java 21 API</a></h3><p>Official documentation for every class we use</p></div>
+        <div class="resource-card"><div class="resource-icon">🎓</div><h3><a href="https://dev.java/learn/" target="_blank">dev.java Learn</a></h3><p>Free tutorials from the Java team</p></div>
+        <div class="resource-card"><div class="resource-icon">📖</div><h3><a href="https://git-scm.com/book" target="_blank">Pro Git</a></h3><p>The free Git book, for when you want more depth</p></div>
+      </div>
+    </section>
+
+    <section id="about" style="margin-top:3rem; margin-bottom:3rem;">
+      <div class="section-header fade-in"><p class="section-label">About This Module</p><h2 class="section-title">Module Information</h2></div>
+      <div class="overview-card fade-in">
+        <p><strong>SENG 12233 — Object-Oriented Programming</strong> is delivered by <strong>Eng. Dr. Tiroshan Madushanka</strong>, Software Engineering Teaching Unit, Faculty of Science, University of Kelaniya. It is a compulsory 3-credit course in Year 1.</p>
+        <p><strong>Pre-requisite:</strong> SENG 11223 Programming Concepts.</p>
+        <p><strong>Academic integrity:</strong> Lab and project work must be your own. You may discuss ideas with friends, but you must write and commit your own code.</p>
+      </div>
+      <div class="course-structure fade-in"><p><strong>Software to install:</strong> <code>JDK 21</code>, <code>Git</code> and an IDE such as IntelliJ IDEA or VS Code. For Week 11, the SQLite JDBC jar (instructions in Lab 8).</p><p><strong>Contact:</strong> Please use the University LMS for submissions, announcements and questions.</p></div>
+    </section>
+  </main>
+</div>
+
+<footer><p class="footer-title">SENG 12233 — Object-Oriented Programming</p><p class="footer-sub">BSc (Hons) Software Engineering · Year 1 · University of Kelaniya</p>
+<div class="footer-links"><a href="#lectures">Lectures</a><a href="#labs">Labs</a><a href="#lms">LMS Guide</a><a href="#git">Git</a><a href="#assessments">Assessments</a><a href="https://tiroshanm.github.io/" target="_blank">Portfolio ↗</a></div>
+<p class="footer-copy">© SENG 12233 · Software Engineering Teaching Unit · Faculty of Science · University of Kelaniya</p></footer>
+<script>
+const scrollBar=document.getElementById('scrollBar');
+window.addEventListener('scroll',()=>{const t=document.documentElement.scrollHeight-window.innerHeight;scrollBar.style.width=(window.scrollY/t*100)+'%';},{passive:true});
+const nav=document.getElementById('mainNav');
+window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',window.scrollY>40);},{passive:true});
+const obs=new IntersectionObserver((es)=>{es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('visible'),i*55);obs.unobserve(e.target);}});},{threshold:0.05,rootMargin:'0px 0px -30px 0px'});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+const mb=document.querySelector('.mobile-menu-btn'),nl=document.querySelector('.nav-links');
+if(mb)mb.addEventListener('click',()=>{const o=nl.style.display==='flex';nl.style.cssText=o?'':'display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:#f8f8f8;padding:1rem 1.5rem;gap:1rem;border-bottom:1px solid #e8e8e6;';});
+
+const sectionIds=['lectures','labs','lms','git','assessments','resources','about'];
+const sl=document.querySelectorAll('.sidebar-nav-link'),nlk=document.querySelectorAll('.nav-links a');
+const so=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){const id=e.target.id;
+sl.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+id));
+nlk.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+id));}});},{threshold:0.2,rootMargin:'-60px 0px -60% 0px'});
+sectionIds.forEach(id=>{const el=document.getElementById(id);if(el)so.observe(el);});
+const wk=new Date();
+</script></body></html>

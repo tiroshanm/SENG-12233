@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Step 03: Abstract Classes &amp; Interfaces · SENG 12233 LMS Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+            --white: #ffffff;
+            --off-white: #f8f8f8;
+            --cream: #f5f5f5;
+            --light-gray: #e8e8e6;
+            --medium-gray: #999999;
+            --dark-gray: #4a4a4a;
+            --charcoal: #2a2a2a;
+            --black: #1a1a1a;
+            --accent: #8b7355;
+            --accent-light: #c4b5a0;
+            --accent-pale: #e8dfd4;
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-sans: 'Source Sans 3', -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--off-white);
+            color: var(--charcoal);
+            line-height: 1.7;
+            font-weight: 300;
+            overflow-x: hidden;
+        }
+
+        ::selection { background: var(--accent-light); color: var(--black); }
+        a { text-decoration: none; color: inherit; }
+        button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+        /* ── Scroll Progress ── */
+        .scroll-progress {
+            position: fixed; top: 0; left: 0;
+            height: 2px; background: var(--accent);
+            z-index: 1001; transition: width 0.1s ease;
+        }
+
+        /* ── Navigation ── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            padding: 1.2rem 4rem;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(248, 248, 248, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid transparent;
+            transition: all 0.4s ease;
+        }
+        nav.scrolled { border-bottom: 1px solid var(--light-gray); padding: 0.8rem 4rem; }
+        .nav-left { display: flex; align-items: center; gap: 2rem; }
+        .nav-logo { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 400; letter-spacing: 0.02em; color: var(--black); }
+        .nav-logo span { color: var(--accent); }
+        .nav-back { font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--medium-gray); transition: color 0.3s ease; display: flex; align-items: center; gap: 0.4rem; }
+        .nav-back:hover { color: var(--accent); }
+        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+        .nav-links a { font-size: 0.8rem; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dark-gray); position: relative; transition: color 0.3s ease; }
+        .nav-links a::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1px; background: var(--accent); transition: width 0.3s ease; }
+        .nav-links a:hover { color: var(--black); }
+        .nav-links a:hover::after { width: 100%; }
+        .nav-links a.active { color: var(--accent); }
+        .nav-links a.active::after { width: 100%; }
+        .mobile-menu-btn { display: none; padding: 0.5rem; }
+        .mobile-menu-btn span { display: block; width: 22px; height: 1.5px; background: var(--black); margin: 5px 0; transition: all 0.3s ease; }
+
+        /* ── Hero ── */
+        .hero {
+            padding: 10rem 4rem 4rem; text-align: center; position: relative;
+            background: linear-gradient(180deg, #f8f8f8 0%, #f2f2f2 100%);
+        }
+        .hero::before {
+            content: ''; position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 400px;
+            background: radial-gradient(circle, var(--accent-light) 0%, transparent 70%);
+            opacity: 0.12; filter: blur(80px);
+        }
+        .hero-label { font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; font-weight: 500; }
+        .hero h1 { font-family: var(--font-serif); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 300; line-height: 1.15; color: var(--black); margin-bottom: 1rem; letter-spacing: -0.02em; }
+        .hero h1 em { font-style: italic; color: var(--accent); }
+        .hero-description { font-size: 1.05rem; color: var(--dark-gray); max-width: 600px; margin: 0 auto 2rem; line-height: 1.8; }
+        .hero-meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; }
+        .meta-tag { padding: 0.45rem 1rem; background: rgba(255,255,255,0.8); border: 1px solid var(--light-gray); font-size: 0.72rem; letter-spacing: 0.05em; color: var(--dark-gray); transition: all 0.3s ease; }
+        .meta-tag:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Progress Bar ── */
+        .progress-section { max-width: 600px; margin: 2rem auto 0; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--medium-gray); margin-bottom: 0.5rem; }
+        .progress-label-value { color: var(--accent); font-weight: 500; }
+        .progress-bar { width: 100%; height: 3px; background: var(--light-gray); overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); transition: width 0.8s ease; }
+
+        /* ── Module Band ── */
+        .module-band {
+            background: var(--black);
+            padding: 0.75rem 4rem;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 0.5rem;
+        }
+        .module-band-left { font-size: 0.72rem; letter-spacing: 0.06em; color: var(--medium-gray); }
+        .module-band-left strong { color: var(--accent); font-weight: 500; }
+        .module-band-right { display: flex; gap: 1.5rem; }
+        .module-band-right a { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.4); transition: color 0.3s; }
+        .module-band-right a:hover { color: var(--white); }
+
+        /* ── Layout ── */
+        .layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; max-width: 1400px; margin: 0 auto; }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            padding: 2rem 1.5rem; border-right: 1px solid var(--light-gray);
+            position: sticky; top: 60px; height: calc(100vh - 60px);
+            overflow-y: auto; background: var(--off-white);
+        }
+        .sidebar::-webkit-scrollbar { width: 3px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--light-gray); }
+        .sidebar-title { font-family: var(--font-serif); font-size: 1rem; font-weight: 400; color: var(--black); margin-bottom: 0.3rem; }
+        .sidebar-desc { font-size: 0.75rem; color: var(--medium-gray); margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--light-gray); line-height: 1.5; }
+        .sidebar-section { margin-bottom: 1.5rem; }
+        .sidebar-section-label { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 500; }
+        .sidebar-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; font-size: 0.78rem; color: var(--dark-gray); cursor: pointer; transition: color 0.2s ease; }
+        .sidebar-item:hover { color: var(--accent); }
+        .sidebar-check { font-size: 0.65rem; color: var(--accent); min-width: 14px; }
+        .sidebar-lock { font-size: 0.65rem; color: var(--light-gray); min-width: 14px; }
+        .sidebar-nav-links { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--light-gray); }
+        .sidebar-nav-link { display: block; padding: 0.4rem 0; font-size: 0.8rem; color: var(--dark-gray); transition: color 0.2s ease; }
+        .sidebar-nav-link:hover { color: var(--accent); }
+        .sidebar-nav-link.active { color: var(--accent); font-weight: 500; }
+
+        /* ── Main Content ── */
+        .main-content { padding: 2.5rem 3rem; min-height: 100vh; }
+
+        /* ── Section Headers ── */
+        .section-header { margin-bottom: 1.5rem; }
+        .section-label { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem; font-weight: 500; }
+        .section-title { font-family: var(--font-serif); font-size: clamp(1.4rem, 2.5vw, 1.8rem); font-weight: 300; color: var(--black); letter-spacing: -0.01em; }
+
+        /* ── Overview Card ── */
+        .overview-card { background: #f2f2f2; padding: 1.5rem; margin-bottom: 2.5rem; border-left: 3px solid var(--accent); }
+        .overview-card p { font-size: 0.9rem; color: var(--dark-gray); line-height: 1.7; margin-bottom: 0.5rem; }
+        .overview-card p:last-child { margin-bottom: 0; }
+        .overview-card strong { color: var(--black); font-weight: 500; }
+
+        /* ── Part Divider ── */
+        .part-divider { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; margin: 2.5rem 0 1.5rem; border-bottom: 1px solid var(--light-gray); }
+        .part-divider-num { font-family: var(--font-serif); font-size: 2rem; font-weight: 300; color: var(--accent-light); font-style: italic; line-height: 1; }
+        .part-divider-content h3 { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 400; color: var(--black); }
+        .part-divider-content p { font-size: 0.72rem; color: var(--medium-gray); letter-spacing: 0.03em; }
+
+        /* ── Lectures Grid ── */
+        .lectures-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.2rem; margin-bottom: 1.5rem; }
+
+        /* ── Lecture Card ── */
+        .lecture-card { background: var(--white); border: 1px solid var(--light-gray); transition: all 0.4s ease; position: relative; overflow: hidden; }
+        .lecture-card::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 0; background: var(--accent); transition: height 0.4s ease; }
+        .lecture-card:hover { border-color: var(--accent-light); box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+        .lecture-card:hover::before { height: 100%; }
+        .lecture-card-header { padding: 1.2rem 1.5rem 0.8rem; display: flex; justify-content: space-between; align-items: flex-start; }
+        .lecture-num { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 300; color: var(--light-gray); line-height: 1; font-style: italic; transition: color 0.3s ease; }
+        .lecture-card:hover .lecture-num { color: var(--accent-light); }
+        .lecture-title { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 400; color: var(--black); line-height: 1.35; margin-bottom: 0.2rem; }
+        .lecture-subtitle { font-size: 0.78rem; color: var(--medium-gray); }
+        .lecture-ref { font-size: 0.68rem; color: var(--accent); margin-top: 0.3rem; letter-spacing: 0.03em; }
+        .lecture-card-body { padding: 0 1.5rem 1.2rem; }
+        .topics-list { list-style: none; margin-bottom: 1rem; }
+        .topics-list li { padding: 0.3rem 0 0.3rem 1.2rem; position: relative; font-size: 0.82rem; color: var(--dark-gray); border-bottom: 1px solid #fafafa; line-height: 1.5; }
+        .topics-list li:last-child { border-bottom: none; }
+        .topics-list li::before { content: '→'; position: absolute; left: 0; color: var(--accent-light); font-size: 0.72rem; }
+        .lecture-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+        /* ── Buttons ── */
+        .btn { padding: 0.45rem 1rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.4rem; }
+        .btn-primary { background: var(--accent); color: var(--white); }
+        .btn-primary:hover { background: var(--charcoal); }
+        .btn-secondary { background: transparent; color: var(--dark-gray); border: 1px solid var(--light-gray); }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Assessments ── */
+        .assessments-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.2rem; margin-top: 1.5rem; }
+        .assessment-card { background: var(--white); border: 1px solid var(--light-gray); padding: 1.5rem; transition: all 0.4s ease; position: relative; overflow: hidden; }
+        .assessment-card::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 0; background: var(--accent); transition: height 0.4s ease; }
+        .assessment-card:hover { border-color: var(--accent-light); box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+        .assessment-card:hover::before { height: 100%; }
+        .assessment-type { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 500; }
+        .assessment-title { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 400; color: var(--black); margin-bottom: 0.4rem; line-height: 1.3; }
+        .assessment-meta { font-size: 0.78rem; color: var(--medium-gray); margin-bottom: 0.8rem; }
+        .assessment-desc { font-size: 0.83rem; color: var(--dark-gray); line-height: 1.65; margin-bottom: 1rem; }
+        .assessment-tasks { list-style: none; margin-bottom: 1rem; }
+        .assessment-tasks li { padding: 0.3rem 0 0.3rem 1.2rem; position: relative; font-size: 0.8rem; color: var(--dark-gray); border-bottom: 1px solid #fafafa; }
+        .assessment-tasks li:last-child { border-bottom: none; }
+        .assessment-tasks li::before { content: '→'; position: absolute; left: 0; color: var(--accent-light); font-size: 0.72rem; }
+        .assessment-weight { display: inline-block; padding: 0.3rem 0.8rem; background: var(--accent-pale); color: var(--accent); font-size: 0.7rem; letter-spacing: 0.05em; font-weight: 500; }
+
+        /* ── Resources Section ── */
+        .resources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+        .resource-card { padding: 1.5rem; background: #f2f2f2; text-align: center; transition: all 0.3s ease; }
+        .resource-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
+        .resource-icon { font-size: 1.5rem; margin-bottom: 0.6rem; }
+        .resource-card h3 { font-family: var(--font-serif); font-size: 0.95rem; font-weight: 400; color: var(--black); margin-bottom: 0.25rem; }
+        .resource-card h3 a { color: inherit; transition: color 0.3s; }
+        .resource-card h3 a:hover { color: var(--accent); }
+        .resource-card p { font-size: 0.72rem; color: var(--medium-gray); }
+
+        /* ── Learning Path ── */
+        .learning-path { margin-top: 1.5rem; }
+        .path-item { display: flex; gap: 1rem; padding: 0.8rem 0; border-bottom: 1px solid var(--light-gray); }
+        .path-item:last-child { border-bottom: none; }
+        .path-phase { font-family: var(--font-serif); font-size: 0.9rem; font-style: italic; color: var(--accent); min-width: 60px; }
+        .path-desc { font-size: 0.85rem; color: var(--dark-gray); line-height: 1.6; }
+        .path-desc strong { color: var(--black); font-weight: 500; }
+
+        /* ── Course Structure ── */
+        .course-structure { margin-top: 2rem; padding: 1.5rem; background: #f2f2f2; border-left: 3px solid var(--accent); }
+        .course-structure p { font-size: 0.85rem; color: var(--dark-gray); margin-bottom: 0.5rem; line-height: 1.7; }
+        .course-structure p:last-child { margin-bottom: 0; }
+        .course-structure strong { color: var(--black); font-weight: 500; }
+
+        /* ── Footer ── */
+        footer { background: var(--black); color: var(--white); text-align: center; padding: 2.5rem 4rem; }
+        .footer-title { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 400; margin-bottom: 0.3rem; }
+        .footer-sub { font-size: 0.72rem; color: var(--medium-gray); margin-bottom: 1rem; }
+        .footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
+        .footer-links a { font-size: 0.75rem; color: var(--medium-gray); letter-spacing: 0.04em; transition: color 0.3s ease; }
+        .footer-links a:hover { color: var(--white); }
+        .footer-copy { font-size: 0.65rem; color: var(--medium-gray); margin-top: 1.2rem; opacity: 0.6; }
+
+        /* ── Animations ── */
+        .fade-in { opacity: 0; transform: translateY(12px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+        /* ── Responsive ── */
+        @media (max-width: 1024px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .main-content { padding: 2rem; }
+        }
+        @media (max-width: 768px) {
+            nav { padding: 1rem 1.5rem; }
+            .nav-links { display: none; }
+            .mobile-menu-btn { display: block; }
+            .hero { padding: 8rem 1.5rem 3rem; }
+            .main-content { padding: 1.5rem; }
+            .lectures-grid { grid-template-columns: 1fr; }
+            .assessments-grid { grid-template-columns: 1fr; }
+            .hero-meta { flex-direction: column; align-items: center; }
+            .resources-grid { grid-template-columns: 1fr 1fr; }
+            .module-band { padding: 0.75rem 1.5rem; }
+            footer { padding: 2rem 1.5rem; }
+        }
+        @media (max-width: 480px) { .resources-grid { grid-template-columns: 1fr; } }
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.hl .hll { background-color: #49483e }
+.hl { background: #272822; color: #F8F8F2 }
+.hl .c { color: #959077 } /* Comment */
+.hl .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.hl .esc { color: #F8F8F2 } /* Escape */
+.hl .g { color: #F8F8F2 } /* Generic */
+.hl .k { color: #66D9EF } /* Keyword */
+.hl .l { color: #AE81FF } /* Literal */
+.hl .n { color: #F8F8F2 } /* Name */
+.hl .o { color: #FF4689 } /* Operator */
+.hl .x { color: #F8F8F2 } /* Other */
+.hl .p { color: #F8F8F2 } /* Punctuation */
+.hl .ch { color: #959077 } /* Comment.Hashbang */
+.hl .cm { color: #959077 } /* Comment.Multiline */
+.hl .cp { color: #959077 } /* Comment.Preproc */
+.hl .cpf { color: #959077 } /* Comment.PreprocFile */
+.hl .c1 { color: #959077 } /* Comment.Single */
+.hl .cs { color: #959077 } /* Comment.Special */
+.hl .gd { color: #FF4689 } /* Generic.Deleted */
+.hl .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.hl .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.hl .gr { color: #FF4689 } /* Generic.Error */
+.hl .gh { color: #F8F8F2 } /* Generic.Heading */
+.hl .gi { color: #A6E22E } /* Generic.Inserted */
+.hl .go { color: #66D9EF } /* Generic.Output */
+.hl .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.hl .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.hl .gu { color: #959077 } /* Generic.Subheading */
+.hl .gt { color: #66D9EF } /* Generic.Traceback */
+.hl .kc { color: #66D9EF } /* Keyword.Constant */
+.hl .kd { color: #66D9EF } /* Keyword.Declaration */
+.hl .kn { color: #FF4689 } /* Keyword.Namespace */
+.hl .kp { color: #66D9EF } /* Keyword.Pseudo */
+.hl .kr { color: #66D9EF } /* Keyword.Reserved */
+.hl .kt { color: #66D9EF } /* Keyword.Type */
+.hl .ld { color: #E6DB74 } /* Literal.Date */
+.hl .m { color: #AE81FF } /* Literal.Number */
+.hl .s { color: #E6DB74 } /* Literal.String */
+.hl .na { color: #A6E22E } /* Name.Attribute */
+.hl .nb { color: #A6E22E } /* Name.Builtin */
+.hl .nc { color: #A6E22E } /* Name.Class */
+.hl .no { color: #66D9EF } /* Name.Constant */
+.hl .nd { color: #A6E22E } /* Name.Decorator */
+.hl .ni { color: #F8F8F2 } /* Name.Entity */
+.hl .ne { color: #A6E22E } /* Name.Exception */
+.hl .nf { color: #A6E22E } /* Name.Function */
+.hl .nl { color: #F8F8F2 } /* Name.Label */
+.hl .nn { color: #F8F8F2 } /* Name.Namespace */
+.hl .nx { color: #A6E22E } /* Name.Other */
+.hl .py { color: #F8F8F2 } /* Name.Property */
+.hl .nt { color: #FF4689 } /* Name.Tag */
+.hl .nv { color: #F8F8F2 } /* Name.Variable */
+.hl .ow { color: #FF4689 } /* Operator.Word */
+.hl .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.hl .w { color: #F8F8F2 } /* Text.Whitespace */
+.hl .mb { color: #AE81FF } /* Literal.Number.Bin */
+.hl .mf { color: #AE81FF } /* Literal.Number.Float */
+.hl .mh { color: #AE81FF } /* Literal.Number.Hex */
+.hl .mi { color: #AE81FF } /* Literal.Number.Integer */
+.hl .mo { color: #AE81FF } /* Literal.Number.Oct */
+.hl .sa { color: #E6DB74 } /* Literal.String.Affix */
+.hl .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.hl .sc { color: #E6DB74 } /* Literal.String.Char */
+.hl .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.hl .sd { color: #E6DB74 } /* Literal.String.Doc */
+.hl .s2 { color: #E6DB74 } /* Literal.String.Double */
+.hl .se { color: #AE81FF } /* Literal.String.Escape */
+.hl .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.hl .si { color: #E6DB74 } /* Literal.String.Interpol */
+.hl .sx { color: #E6DB74 } /* Literal.String.Other */
+.hl .sr { color: #E6DB74 } /* Literal.String.Regex */
+.hl .s1 { color: #E6DB74 } /* Literal.String.Single */
+.hl .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.hl .bp { color: #A6E22E } /* Name.Builtin.Pseudo */
+.hl .fm { color: #A6E22E } /* Name.Function.Magic */
+.hl .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.hl .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.hl .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.hl .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.hl .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.hl { background:#1e1e1e !important; }
+.guide-intro { max-width: 860px; }
+.step-block { margin: 1.4rem 0; }
+.step-block p { font-size: 0.92rem; color: var(--dark-gray); line-height: 1.75; margin-bottom: .7rem; }
+.step-block h3 { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 400; color: var(--black); margin: 2rem 0 .6rem; }
+.step-block h4 { font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 1.2rem 0 .4rem; font-weight: 500; }
+.step-block ul, .step-block ol { margin: 0 0 .9rem 1.3rem; font-size: .9rem; color: var(--dark-gray); }
+.step-block li { margin: .25rem 0; line-height: 1.65; }
+.step-block code, .callout code { font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size: .8em; background: #efece6; padding: .05rem .3rem; }
+.step-block strong { color: var(--black); font-weight: 500; }
+.step-block table { border-collapse: collapse; width: 100%; font-size: .82rem; margin: .8rem 0 1.2rem; }
+.step-block th { background: var(--accent-pale); text-align: left; padding: .45rem .7rem; font-weight: 500; }
+.step-block td { padding: .4rem .7rem; border-bottom: 1px solid var(--light-gray); vertical-align: top; }
+.codefile { margin: 1rem 0 1.4rem; border: 1px solid var(--light-gray); background: #fff; }
+.codefile > summary { cursor: pointer; padding: .55rem .9rem; font-size: .78rem; letter-spacing: .04em; color: var(--dark-gray); display: flex; gap: .8rem; align-items: baseline; list-style: none; }
+.codefile > summary::-webkit-details-marker { display: none; }
+.codefile > summary::before { content: '+'; color: var(--accent); font-weight: 600; width: .8rem; }
+.codefile[open] > summary::before { content: '\2212'; }
+.codefile .fname { font-family: 'DejaVu Sans Mono', Consolas, monospace; color: var(--black); font-size: .78rem; }
+.codefile .fcap { color: var(--medium-gray); font-size: .76rem; }
+.codefile .hl { margin: 0; overflow-x: auto; }
+.codefile pre { margin: 0; padding: .9rem 1rem; font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size: .76rem; line-height: 1.5; font-weight: 400; }
+.cmd, .out { margin: .8rem 0 1.2rem; font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size: .76rem; line-height: 1.55; padding: .8rem 1rem; overflow-x: auto; white-space: pre; font-weight: 400; }
+.cmd { background: #1e1e1e; color: #e6e6e6; }
+.cmd::before { content: '$ run'; display:block; color: var(--accent-light); font-size: .64rem; letter-spacing: .15em; text-transform: uppercase; margin-bottom: .3rem; }
+.out { background: #f2f2f2; border-left: 3px solid var(--accent); color: var(--charcoal); }
+.out::before { content: 'expected output'; display:block; color: var(--accent); font-size: .64rem; letter-spacing: .15em; text-transform: uppercase; margin-bottom: .3rem; font-family: var(--font-sans); }
+figure { margin: 1.2rem 0 1.6rem; background: #fff; border: 1px solid var(--light-gray); padding: .8rem; }
+figure img { max-width: 100%; display: block; margin: 0 auto; }
+figcaption { font-size: .76rem; color: var(--medium-gray); margin-top: .5rem; text-align: center; }
+.callout { margin: 1.1rem 0; padding: .9rem 1.1rem; font-size: .88rem; line-height: 1.7; color: var(--dark-gray); background: #f2f2f2; border-left: 3px solid var(--accent); }
+.callout.tip { border-left-color: #5d8a5a; background: #eef3ec; }
+.callout.warn { border-left-color: #b5651d; background: #f7eee3; }
+.callout.check { border-left-color: #3d6a99; background: #ecf1f6; }
+.callout strong { color: var(--black); font-weight: 600; }
+.pager { display:flex; justify-content: space-between; gap: 1rem; margin: 3rem 0 1rem; padding-top: 1.5rem; border-top: 1px solid var(--light-gray); flex-wrap: wrap; }
+.checklist { list-style: none; margin-left: 0 !important; }
+.checklist li { padding-left: 1.6rem; position: relative; }
+.checklist li::before { content: '\2610'; position: absolute; left: 0; color: var(--accent); }
+.sidebar-item a { display:flex; gap:.5rem; width:100%; }
+.sidebar-item.current { color: var(--accent); font-weight: 500; }
+
+</style></head><body>
+<div class="scroll-progress" id="scrollBar"></div>
+<nav id="mainNav"><div class="nav-left"><div class="nav-logo">SENG<span>.</span>12233</div><a class="nav-back" href="../index.html">← Course page</a></div>
+<ul class="nav-links"><li><a href="index.html" class="">LMS Guide</a></li><li><a href="../index.html#labs">Labs</a></li><li><a href="../index.html#lectures">Lectures</a></li><li><a href="../index.html#git">Git</a></li></ul>
+<button class="mobile-menu-btn" aria-label="Menu"><span></span><span></span><span></span></button></nav>
+<section class="hero" style="padding-bottom:2.5rem"><p class="hero-label">LMS Guide · Step 03 of 9 · Week 4 · Lab 3</p><h1>Abstract Classes & Interfaces</h1><p class="hero-description"></p><div class="hero-meta"><span class="meta-tag">Lab 3</span><span class="meta-tag">Week 4</span><span class="meta-tag">Abstraction</span><span class="meta-tag">Interfaces</span></div></section>
+<div class="layout"><aside class="sidebar">
+    <p class="sidebar-title">LMS Guide</p>
+    <p class="sidebar-desc">Build the Library Management System step by step</p>
+    <div class="sidebar-nav-links">
+      <a class="sidebar-nav-link" href="index.html">Overview</a>
+      <a class="sidebar-nav-link" href="../index.html">← Course page</a>
+    </div>
+    <div class="sidebar-section"><p class="sidebar-section-label">Steps</p><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step01_encapsulation.html">01 · Classes, Objects & Encapsulation</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step02_inheritance.html">02 · Inheritance & Polymorphism</a></div><div class="sidebar-item current"><span class="sidebar-check">●</span><a href="step03_interfaces.html">03 · Abstract Classes & Interfaces</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step04_exceptions.html">04 · Exception Handling</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step05_gui_layouts.html">05 · GUI I: Layouts & Widgets</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step06_gui_events_mvc.html">06 · GUI II: Events & MVC</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step07_generics_streams.html">07 · Generics, Collections & Streams</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step08_jdbc.html">08 · JDBC & the Database</a></div><div class="sidebar-item"><span class="sidebar-check">○</span><a href="step09_threads_final.html">09 · Threads & Shipping v1.0</a></div></div>
+  </aside><main class="main-content"><div class="guide-intro"><div class="step-block"><p><strong>Goal:</strong> make <code>LibraryItem</code> <strong>abstract</strong>, introduce the interfaces <code>Loanable</code> and <code>Reservable</code>, add <code>Magazine</code>, and make <code>Member</code> sortable.</p></div>
+<figure><img src="img/uml_w4.png" alt="Target design for Step 3"/><figcaption>Target design for Step 3</figcaption></figure>
+<div class="step-block"><h3>1. Two contracts</h3></div>
+<details class="codefile" open><summary><span class="fname">src/lms/model/Loanable.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.model</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Loanable - a contract: "anything that can be loaned to a Member".</span>
+<span class="cm"> *</span>
+<span class="cm"> * An interface says WHAT must be possible, never HOW. Any class that</span>
+<span class="cm"> * implements Loanable promises to provide both methods below.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">Loanable</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">loan</span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">returnItem</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<details class="codefile" open><summary><span class="fname">src/lms/model/Reservable.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.model</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Reservable - a second, separate contract.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Only some items can be reserved (Books, but not DVDs or Magazines in</span>
+<span class="cm"> * our library), so this capability does NOT belong on LibraryItem.</span>
+<span class="cm"> * An interface lets us attach it to exactly the classes that need it.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">Reservable</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">reserve</span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">cancelReservation</span><span class="p">();</span>
+<span class="w">    </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">isReserved</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="step-block"><h3>2. The abstract class</h3>
+<p><code>calculateLateFee</code> now has <strong>no body</strong>. <code>LibraryItem</code> also implements <code>Loanable</code>, so the loan logic lives here once.</p></div>
+<details class="codefile"><summary><span class="fname">src/lms/model/LibraryItem.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.model</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * LibraryItem - Week 4 version.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Two changes from Week 3:</span>
+<span class="cm"> *   1. It now IMPLEMENTS the Loanable interface (a contract it fulfils).</span>
+<span class="cm"> *   2. calculateLateFee() is now truly ABSTRACT - no default body.</span>
+<span class="cm"> *      Every subclass must write its own, or it will not compile.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LibraryItem</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">Loanable</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">id</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">title</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="n">isBorrowed</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">LibraryItem</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">title</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">setId</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+<span class="w">        </span><span class="n">setTitle</span><span class="p">(</span><span class="n">title</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">isBorrowed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getId</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">id</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getTitle</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">title</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">isBorrowed</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">isBorrowed</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setId</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">id</span><span class="p">.</span><span class="na">isBlank</span><span class="p">())</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">"Id cannot be blank"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">id</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setTitle</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">title</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">title</span><span class="p">.</span><span class="na">isBlank</span><span class="p">())</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">"Title cannot be blank"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">title</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// ---- Loanable contract (shared implementation lives here) ----</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">loan</span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isBorrowed</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" is already on loan."</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">member</span><span class="p">.</span><span class="na">getBorrowedCount</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">member</span><span class="p">.</span><span class="na">getMaxBorrowLimit</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">member</span><span class="p">.</span><span class="na">getName</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" has reached the limit of "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">member</span><span class="p">.</span><span class="na">getMaxBorrowLimit</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" items."</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">isBorrowed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span>
+<span class="w">            </span><span class="n">member</span><span class="p">.</span><span class="na">incrementBorrowedCount</span><span class="p">();</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" loaned to "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">member</span><span class="p">.</span><span class="na">getName</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">returnItem</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">isBorrowed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" returned."</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** No body: each subclass MUST define its own late-fee rule. */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="nf">calculateLateFee</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">daysLate</span><span class="p">);</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">toString</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">getClass</span><span class="p">().</span><span class="na">getSimpleName</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"{id='"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"', title='"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"', borrowed="</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">isBorrowed</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"}"</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="step-block"><h3>3. Three concrete items</h3>
+<p><code>Book</code> is also <code>Reservable</code>; <code>DVD</code> is not; <code>Magazine</code> is new, and the compiler forces its fee rule.</p></div>
+<details class="codefile"><summary><span class="fname">src/lms/model/Book.java</span><span class="fcap">extends LibraryItem implements Reservable</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.model</span><span class="p">;</span>
+
+<span class="cm">/** Book - a LibraryItem that can ALSO be reserved (implements Reservable). */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Book</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">LibraryItem</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">Reservable</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">author</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">Member</span><span class="w"> </span><span class="n">reservedBy</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">Book</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">author</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">super</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">);</span>
+<span class="w">        </span><span class="n">setAuthor</span><span class="p">(</span><span class="n">author</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getAuthor</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">author</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setAuthor</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">author</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">author</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">author</span><span class="p">.</span><span class="na">isBlank</span><span class="p">())</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">"Author cannot be blank"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">author</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">author</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Books used to inherit a default rate; now each class states its own. */</span>
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="nf">calculateLateFee</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">daysLate</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">daysLate</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">10.0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// ---- Reservable contract ----</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">reserve</span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">reservedBy</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">getTitle</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" is already reserved by "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">reservedBy</span><span class="p">.</span><span class="na">getName</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">reservedBy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">member</span><span class="p">;</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">getTitle</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" reserved for "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">member</span><span class="p">.</span><span class="na">getName</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">cancelReservation</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">reservedBy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Reservation cancelled for "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">getTitle</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">isReserved</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">reservedBy</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<details class="codefile"><summary><span class="fname">src/lms/model/Magazine.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.model</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Magazine - a NEW kind of item added this week.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Try this experiment: delete the calculateLateFee() method below and</span>
+<span class="cm"> * try to compile. Because LibraryItem declares it abstract, the compiler</span>
+<span class="cm"> * refuses: "Magazine is not abstract and does not override abstract method".</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Magazine</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">LibraryItem</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">issueNumber</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">Magazine</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">issueNumber</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">super</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">issueNumber</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">issueNumber</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">getIssueNumber</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">issueNumber</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="nf">calculateLateFee</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">daysLate</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">daysLate</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">5.0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="step-block"><h3>4. Sorting members with <code>Comparable</code></h3></div>
+<details class="codefile"><summary><span class="fname">src/lms/model/Member.java</span><span class="fcap">compareTo: most active first</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.model</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Member - parent of Student and Staff. Week 4: implements Comparable so a</span>
+<span class="cm"> * list of members can be sorted with Collections.sort().</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Member</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">Comparable</span><span class="o">&lt;</span><span class="n">Member</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">memberId</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">borrowedCount</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">maxBorrowLimit</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">Member</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">memberId</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">maxBorrowLimit</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">setMemberId</span><span class="p">(</span><span class="n">memberId</span><span class="p">);</span>
+<span class="w">        </span><span class="n">setName</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">maxBorrowLimit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">maxBorrowLimit</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">borrowedCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getMemberId</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">memberId</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getName</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">name</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">getBorrowedCount</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">borrowedCount</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">getMaxBorrowLimit</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">maxBorrowLimit</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setMemberId</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">memberId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">memberId</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">memberId</span><span class="p">.</span><span class="na">isBlank</span><span class="p">())</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">"Member ID cannot be blank"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">memberId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">memberId</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setName</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">name</span><span class="p">.</span><span class="na">isBlank</span><span class="p">())</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">"Name cannot be blank"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">name</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setBorrowedCount</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">borrowedCount</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">borrowedCount</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">"Borrowed count cannot be negative"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">borrowedCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">borrowedCount</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">incrementBorrowedCount</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">setBorrowedCount</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="na">borrowedCount</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/**</span>
+<span class="cm">     * Natural order: MOST active member first (highest borrowedCount).</span>
+<span class="cm">     * Collections.sort(list) calls this method to decide which of two</span>
+<span class="cm">     * members comes first.</span>
+<span class="cm">     */</span>
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">compareTo</span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Integer</span><span class="p">.</span><span class="na">compare</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="na">borrowedCount</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">borrowedCount</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">toString</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">getClass</span><span class="p">().</span><span class="na">getSimpleName</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"{id='"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">memberId</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"', name='"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">"', borrowedCount="</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">borrowedCount</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">", limit="</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">maxBorrowLimit</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">"}"</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="step-block"><h3>5. <code>Library</code> talks to interfaces</h3></div>
+<details class="codefile"><summary><span class="fname">src/lms/service/Library.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms.service</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Book</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.DVD</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.LibraryItem</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Loanable</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Member</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.Reservable</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.ArrayList</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.Collections</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.List</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Library - Week 4 version (Abstract Classes &amp; Interfaces).</span>
+<span class="cm"> *</span>
+<span class="cm"> * Kept from Week 3: printAllLateFees(), the addItem() overloads.</span>
+<span class="cm"> * New this week: methods that talk to INTERFACE types (Loanable,</span>
+<span class="cm"> * Reservable) instead of concrete classes, and a Comparable-based sort.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Library</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Member</span><span class="o">&gt;</span><span class="w"> </span><span class="n">members</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+
+<span class="w">    </span><span class="c1">// ---- from Week 3 (unchanged) ----</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addItem</span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">items</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">item</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Added via addItem(LibraryItem): "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="na">getTitle</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addItem</span><span class="p">(</span><span class="n">Book</span><span class="w"> </span><span class="n">book</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">items</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">book</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Added via addItem(Book): "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">book</span><span class="p">.</span><span class="na">getTitle</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addItem</span><span class="p">(</span><span class="n">DVD</span><span class="w"> </span><span class="n">dvd</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">items</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">dvd</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Added via addItem(DVD): "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">dvd</span><span class="p">.</span><span class="na">getTitle</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">addMember</span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">members</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">member</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">printAllLateFees</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">daysLate</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- Late fees if "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">daysLate</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" day(s) late ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">items</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="na">getTitle</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">": "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="na">calculateLateFee</span><span class="p">(</span><span class="n">daysLate</span><span class="p">));</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// ---- NEW in Week 4 ----</span>
+
+<span class="w">    </span><span class="cm">/**</span>
+<span class="cm">     * The parameter type is the INTERFACE Loanable, not LibraryItem.</span>
+<span class="cm">     * This method would work for anything that promises to be loanable,</span>
+<span class="cm">     * even a class that is not a LibraryItem at all.</span>
+<span class="cm">     */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">lend</span><span class="p">(</span><span class="n">Loanable</span><span class="w"> </span><span class="n">thing</span><span class="p">,</span><span class="w"> </span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">thing</span><span class="p">.</span><span class="na">loan</span><span class="p">(</span><span class="n">member</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/**</span>
+<span class="cm">     * Only some items are Reservable. Checking for the INTERFACE (not for</span>
+<span class="cm">     * Book) means a future Reservable class works here with no changes.</span>
+<span class="cm">     */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">reserveIfPossible</span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="n">Member</span><span class="w"> </span><span class="n">member</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">Reservable</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">r</span><span class="p">.</span><span class="na">reserve</span><span class="p">(</span><span class="n">member</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="na">getTitle</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" cannot be reserved."</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/** Prints members ranked by activity, using Member's compareTo(). */</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">printMembersByActivity</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Member</span><span class="o">&gt;</span><span class="w"> </span><span class="n">sorted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">members</span><span class="p">);</span>
+<span class="w">        </span><span class="n">Collections</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">sorted</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- Members ranked by activity ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">sorted</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="na">getName</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" ("</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="na">getBorrowedCount</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" borrowed)"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">listItems</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- Items in the library ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">LibraryItem</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">items</span><span class="p">)</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">item</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">listMembers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- Registered members ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Member</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">members</span><span class="p">)</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">m</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">LibraryItem</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getItems</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">items</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Member</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getMembers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">members</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<details class="codefile"><summary><span class="fname">src/lms/Main.java</span></summary><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nn">lms</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.model.*</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lms.service.Library</span><span class="p">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Main - Week 4 demo: Abstract Classes &amp; Interfaces.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Try this yourself:</span>
+<span class="cm"> *   1. Delete calculateLateFee() from Magazine and compile. Read the error.</span>
+<span class="cm"> *   2. Add "implements Reservable" to DVD and satisfy the compiler.</span>
+<span class="cm"> *   3. Write a new class Poster that implements Loanable but is NOT a</span>
+<span class="cm"> *      LibraryItem, then pass it to library.lend(...).</span>
+<span class="cm"> *   4. Change compareTo() so the LEAST active member sorts first.</span>
+<span class="cm"> */</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Main</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Library</span><span class="w"> </span><span class="n">library</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Library</span><span class="p">();</span>
+
+<span class="w">        </span><span class="n">Book</span><span class="w"> </span><span class="n">book</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Book</span><span class="p">(</span><span class="s">"B001"</span><span class="p">,</span><span class="w"> </span><span class="s">"Clean Code"</span><span class="p">,</span><span class="w"> </span><span class="s">"Robert C. Martin"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">DVD</span><span class="w"> </span><span class="n">dvd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DVD</span><span class="p">(</span><span class="s">"D001"</span><span class="p">,</span><span class="w"> </span><span class="s">"Introduction to Algorithms"</span><span class="p">,</span><span class="w"> </span><span class="mi">120</span><span class="p">);</span>
+<span class="w">        </span><span class="n">Magazine</span><span class="w"> </span><span class="n">mag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Magazine</span><span class="p">(</span><span class="s">"G001"</span><span class="p">,</span><span class="w"> </span><span class="s">"Software Weekly"</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">addItem</span><span class="p">(</span><span class="n">book</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">addItem</span><span class="p">(</span><span class="n">dvd</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">addItem</span><span class="p">(</span><span class="n">mag</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">Student</span><span class="w"> </span><span class="n">nadeesha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Student</span><span class="p">(</span><span class="s">"M001"</span><span class="p">,</span><span class="w"> </span><span class="s">"Nadeesha Perera"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">Staff</span><span class="w"> </span><span class="n">kasun</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Staff</span><span class="p">(</span><span class="s">"M002"</span><span class="p">,</span><span class="w"> </span><span class="s">"Mr. Kasun Silva"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">addMember</span><span class="p">(</span><span class="n">nadeesha</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">addMember</span><span class="p">(</span><span class="n">kasun</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Abstract method: three classes, three different fee rules</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">printAllLateFees</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Loanable interface</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- Loans ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">lend</span><span class="p">(</span><span class="n">book</span><span class="p">,</span><span class="w"> </span><span class="n">nadeesha</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">lend</span><span class="p">(</span><span class="n">book</span><span class="p">,</span><span class="w"> </span><span class="n">kasun</span><span class="p">);</span><span class="w">      </span><span class="c1">// already on loan</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">lend</span><span class="p">(</span><span class="n">dvd</span><span class="p">,</span><span class="w"> </span><span class="n">kasun</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">lend</span><span class="p">(</span><span class="n">mag</span><span class="p">,</span><span class="w"> </span><span class="n">kasun</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Reservable interface: only Book qualifies</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"--- Reservations ---"</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">reserveIfPossible</span><span class="p">(</span><span class="n">book</span><span class="p">,</span><span class="w"> </span><span class="n">kasun</span><span class="p">);</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">reserveIfPossible</span><span class="p">(</span><span class="n">dvd</span><span class="p">,</span><span class="w"> </span><span class="n">nadeesha</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Comparable</span>
+<span class="w">        </span><span class="n">library</span><span class="p">.</span><span class="na">printMembersByActivity</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</details>
+<div class="cmd">mkdir -p out
+javac -d out $(find src -name &quot;*.java&quot;)
+java -cp out lms.Main</div>
+<div class="out">Added via addItem(Book): Clean Code
+Added via addItem(DVD): Introduction to Algorithms
+Added via addItem(LibraryItem): Software Weekly
+--- Late fees if 3 day(s) late ---
+Clean Code: 30.0
+Introduction to Algorithms: 75.0
+Software Weekly: 15.0
+--- Loans ---
+Clean Code loaned to Nadeesha Perera
+Clean Code is already on loan.
+Introduction to Algorithms loaned to Mr. Kasun Silva
+Software Weekly loaned to Mr. Kasun Silva
+--- Reservations ---
+Clean Code reserved for Mr. Kasun Silva
+Introduction to Algorithms cannot be reserved.
+--- Members ranked by activity ---
+Mr. Kasun Silva (2 borrowed)
+Nadeesha Perera (1 borrowed)</div>
+<div class="step-block"><h3>Capture these compiler errors for your PR</h3>
+<table>
+<thead>
+<tr>
+<th>You do this</th>
+<th>The compiler says</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>new LibraryItem("X","Y")</code></td>
+<td><code>LibraryItem is abstract; cannot be instantiated</code></td>
+</tr>
+<tr>
+<td>delete <code>calculateLateFee</code> from <code>Magazine</code></td>
+<td><code>Magazine is not abstract and does not override abstract method calculateLateFee(int) in LibraryItem</code></td>
+</tr>
+<tr>
+<td>add <code>implements Reservable</code> to <code>DVD</code></td>
+<td><code>DVD is not abstract and does not override abstract method isReserved() in Reservable</code></td>
+</tr>
+<tr>
+<td><code>item.getAuthor()</code> on a <code>LibraryItem</code> variable</td>
+<td><code>cannot find symbol</code></td>
+</tr>
+</tbody>
+</table>
+<div class="callout tip"><p><strong>Tip</strong> These errors are your friends: the compiler is enforcing the contract you designed.</p>
+</div></div>
+<div class="step-block"><h3>Checkpoint: is it done?</h3><ul class="checklist"><li><code>new LibraryItem(...)</code> fails to compile and you saved the message</li><li><code>DVD</code> is not <code>Reservable</code>, yet <code>reserveIfPossible(dvd, …)</code> works</li><li>Members are ranked most-active first</li><li>UML saved as <code>docs/uml-week4.png</code>; PR: <em>Week 4: Abstract Classes &amp; Interfaces</em></li></ul></div><div class="pager"><a href="step02_inheritance.html"><button class="btn btn-secondary">← Step 02: Inheritance & Polymorphism</button></a><a href="step04_exceptions.html"><button class="btn btn-primary">Step 04: Exception Handling →</button></a></div></div></main></div>
+<footer><p class="footer-title">SENG 12233 — Object-Oriented Programming</p><p class="footer-sub">Library Management System guide · University of Kelaniya</p>
+<div class="footer-links"><a href="index.html">Guide overview</a><a href="../index.html">Course page</a></div>
+<p class="footer-copy">© SENG 12233 · Software Engineering Teaching Unit · Faculty of Science · University of Kelaniya</p></footer>
+<script>
+const scrollBar=document.getElementById('scrollBar');
+window.addEventListener('scroll',()=>{const t=document.documentElement.scrollHeight-window.innerHeight;scrollBar.style.width=(window.scrollY/t*100)+'%';},{passive:true});
+const nav=document.getElementById('mainNav');
+window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',window.scrollY>40);},{passive:true});
+const obs=new IntersectionObserver((es)=>{es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('visible'),i*55);obs.unobserve(e.target);}});},{threshold:0.05,rootMargin:'0px 0px -30px 0px'});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+const mb=document.querySelector('.mobile-menu-btn'),nl=document.querySelector('.nav-links');
+if(mb)mb.addEventListener('click',()=>{const o=nl.style.display==='flex';nl.style.cssText=o?'':'display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:#f8f8f8;padding:1rem 1.5rem;gap:1rem;border-bottom:1px solid #e8e8e6;';});
+</script></body></html>
