@@ -122,7 +122,7 @@ a{color:inherit;text-decoration:none}
 .row .r-s{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none}
 .ic.Book{background:#fdf0e1;color:var(--book)}.ic.DVD{background:#e9eaff;color:var(--dvd)}.ic.Magazine{background:#fde6ec;color:var(--mag)}
-.ic.Student{background:var(--blue-50);color:var(--blue)}.ic.Staff{background:var(--amber-50);color:var(--amber)}
+.ic.Lab{background:#ccfbf1;color:#0f766e}.ic.Student{background:var(--blue-50);color:var(--blue)}.ic.Staff{background:var(--amber-50);color:var(--amber)}
 .linkback{font-size:12px;color:var(--blue);font-weight:600;display:inline-flex;gap:4px;margin-bottom:10px}
 .sig{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:10px 12px;font-family:var(--mono);font-size:11.5px;line-height:1.6;margin:10px 0;overflow-x:auto;white-space:pre}
 .sig .kw{color:#f472b6}.sig .ty{color:#7dd3fc}.sig .cm{color:#64748b}.sig .st{color:#86efac}.sig .nu{color:#fbbf24}
@@ -283,6 +283,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:11.5px}
   .clock #nextWeek{display:none}
 }
 </style>
+<link rel="stylesheet" href="oop-lab.css"/>
 </head>
 <body>
 
@@ -299,6 +300,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:11.5px}
     <div id="searchDrop" class="dropdown"></div>
   </div>
   <div class="spacer"></div>
+  <button class="lab-btn" id="labBtn" title="Open the OOP Lab"><span aria-hidden="true">🎓</span> OOP Lab</button>
   <div class="hub"><span class="hub-badge">DB</span><div><b>Main Library</b><small id="hubSub"></small></div></div>
   <div class="clock"><span class="live-dot"></span>Day <b id="dayNum"></b><button id="nextDay" title="Advance the simulated clock">+1 day</button><button id="nextWeek" title="Advance the simulated clock">+7</button></div>
   <div class="user"><div class="avatar">LB</div><div><b>Librarian</b><small>MainFrame · EDT</small></div></div>
@@ -502,7 +504,7 @@ function maybeFail(){
 const ItemDAO = {
   insert(item){
     const type = item.constructor.name;
-    const detail = item instanceof Book ? item.getAuthor() : item instanceof DVD ? item.getDurationMinutes() : item.getIssueNumber();
+    const detail = item.labDescribe ? item.labDescribe() : item instanceof Book ? item.getAuthor() : item instanceof DVD ? item.getDurationMinutes() : item.getIssueNumber();
     const sql = `INSERT INTO items (id, type, title, detail) VALUES (${q(item.getId())}, ${q(type)}, ${q(item.getTitle())}, ${q(String(detail))})`;
     T('dao', `itemDAO.insert(${item.getId()})  // PreparedStatement`); maybeFail(); T('db', sql);
     DB.items.push({ id: item.getId(), type }); sqlLog(sql, CUR_THREAD);
@@ -539,7 +541,7 @@ const LoanDAO = {
 class LibraryController {
   constructor(library){ this.library = library; }
   static loanDays(){ return 14; }
-  addItem(type, id, title, detail){
+  addItem(type, id, title, detail, extra){
     T('controller', `addItem("${type}", "${id}", "${title}", "${detail}")`);
     if (this.library.hasItem(id)) throw new IllegalArgumentException(`An item with id '${id}' already exists`);
     T('controller', `new ${type}(...)  // constructor + setters validate`);
@@ -548,7 +550,11 @@ class LibraryController {
       case 'Book': item = new Book(id, title, detail); break;
       case 'DVD': item = new DVD(id, title, this.#parseWholeNumber(detail, 'Duration')); break;
       case 'Magazine': item = new Magazine(id, title, this.#parseWholeNumber(detail, 'Issue number')); break;
-      default: throw new IllegalArgumentException('Unknown item type: ' + type);
+      default: {
+        const custom = window.LAB_TYPES?.[type];            // a subclass written in the OOP Lab
+        if (!custom) throw new IllegalArgumentException('Unknown item type: ' + type);
+        item = custom.create(id, title, detail, extra);
+      }
     }
     T('model', `${type} created; fields are private, set through validated setters`);
     ItemDAO.insert(item);           // validate → save to DB → add to memory
@@ -558,7 +564,8 @@ class LibraryController {
   addMember(type, id, name){
     T('controller', `addMember("${type}", "${id}", "${name}")`);
     if (this.library.hasMember(id)) throw new IllegalArgumentException(`A member with id '${id}' already exists`);
-    const m = type === 'Staff' ? new Staff(id, name) : new Student(id, name);
+    const custom = window.LAB_MEMBER_TYPES?.[type];
+    const m = custom ? custom.create(id, name) : type === 'Staff' ? new Staff(id, name) : new Student(id, name);
     T('model', `new ${m.constructor.name}(...) → super(id, name, ${m.getMaxBorrowLimit()})`);
     MemberDAO.insert(m);
     this.library.addMember(m);
@@ -653,7 +660,8 @@ const grid = (x0, y0, cols, rows, dx, dy) => { const a = []; for (let r = 0; r <
 const ZONES = {
   Book: { slots: grid(1.25, 11.2, 4, 4, 1.6, 1.7), pallet: '#c9a27a' },
   DVD: { slots: grid(18.85, 1.7, 3, 3, 1.5, 2.0), pallet: '#b8bdf2' },
-  Magazine: { slots: grid(18.85, 11.3, 3, 3, 1.5, 1.75), pallet: '#f0b3c1' }
+  Magazine: { slots: grid(18.85, 11.3, 3, 3, 1.5, 1.75), pallet: '#f0b3c1' },
+  Lab: { slots: grid(1.25, 19.3, 4, 2, 1.6, 1.7), pallet: '#9fded3' }      // classes students create in the OOP Lab
 };
 const memberWorld = i => [9.9 + (i % 3) * 2.7, 15.1 + Math.floor(i / 3) * 2.6];
 const PIN = 'M0 0 C-3 -7 -15 -14 -15 -26 A15 15 0 1 1 15 -26 C15 -14 3 -7 0 0Z';
@@ -680,11 +688,15 @@ function buildStatic(){
   // zone pads
   g += flat(0.8, 10.8, 6.7, 7.5, '#fbeedd', 0, 'stroke="#f0d7b6"') + flat(18.4, 1.2, 5, 6.8, '#e7e9fe', 0, 'stroke="#cfd3fb"')
      + flat(18.4, 10.9, 5, 5.8, '#fde6ec', 0, 'stroke="#f7c9d5"') + flat(8.8, 13.6, 8, 9.6, '#e3ecfb', 0, 'stroke="#c9d8f5"');
+  g = g.replace(/(fill="#fbeedd"|fill="#e7e9fe"|fill="#fde6ec")/g, '$1 data-map="shelves" class="hot"');
+  g += flat(0.8, 18.9, 6.7, 3.9, '#dcf5f0', 0, 'stroke="#b3e6dc" data-map="kinds" class="hot"');
   // pallets
+  g += '<g data-map="shelves" class="hot">';
   for (const [t, z] of Object.entries(ZONES)) z.slots.forEach(([x, y]) => g += box(x - 0.05, y - 0.05, 0, 1.05, 1.05, 0.12, z.pallet));
+  g += '</g>';
   // database cylinder
   const [dx, dy] = P(3.6, 4.4, 0), H = 64;
-  g += `<g class="db" id="db"><ellipse cx="${dx}" cy="${dy}" rx="44" ry="22" fill="rgba(30,58,110,.12)"/>
+  g += `<g class="db hot" id="db" data-map="ledger"><ellipse cx="${dx}" cy="${dy}" rx="44" ry="22" fill="rgba(30,58,110,.12)"/>
     <ellipse class="dbring" cx="${dx}" cy="${dy-H}" rx="36" ry="18" fill="none" stroke="#2563eb" stroke-width="3"/>
     <path d="M${dx-36} ${dy-H} v${H} a36 18 0 0 0 72 0 v${-H}z" fill="url(#dbG)" stroke="#94a3b8"/>
     <path d="M${dx-36} ${dy-H+22} a36 18 0 0 0 72 0 M${dx-36} ${dy-H+44} a36 18 0 0 0 72 0" fill="none" stroke="#2563eb" stroke-width="3" opacity=".8"/>
@@ -692,7 +704,7 @@ function buildStatic(){
     <text x="${dx}" y="${dy-H+5}" text-anchor="middle" font-size="11" font-weight="800" fill="#1d4ed8">SQLite</text></g>`;
   g += `<path d="M${P(4.6,5.8)[0]} ${P(4.6,5.8)[1]} L${P(8.2,5.8)[0]} ${P(8.2,5.8)[1]}" stroke="#93b4f8" stroke-width="2" stroke-dasharray="3 5"/>`;
   // building + wing
-  g += box(16, 2.6, 0, 2, 4.6, 2.3, '#3d7cf6');
+  g += '<g data-map="building" class="hot">' + box(16, 2.6, 0, 2, 4.6, 2.3, '#3d7cf6');
   g += box(8.6, 1.4, 0, 7.4, 6.6, 3.4, '#2f6bf0') + box(8.45, 1.25, 3.4, 7.7, 6.9, 0.22, '#1e4fd6');
   g += box(10, 2.5, 3.62, 1.2, 1, 0.5, '#e2e8f0') + box(14, 2.6, 3.62, 1.1, 0.9, 0.4, '#e2e8f0');
   g += flat(11.6, 3.6, 2.6, 2.6, '#ffffff', 3.63, 'stroke="#bfd2fb" stroke-width="2"') + flat(12.2, 4.2, 1.4, 1.4, '#2563eb', 3.64);
@@ -702,12 +714,12 @@ function buildStatic(){
   });
   g += faceL(9.3, 8, 2.45, 'MAIN LIBRARY', 13, '#ffffff');
   g += faceR(16, 7.6, 2.75, 'LMS', 17, '#ffffff');
-  g += faceR(18, 6.7, 1.2, 'RETURNS', 10, '#dbe7ff', 700);
+  g += faceR(18, 6.7, 1.2, 'RETURNS', 10, '#dbe7ff', 700) + '</g>';
   // desk
-  g += box(10.2, 11.2, 0, 4.6, 1.1, 0.95, '#ffffff') + flat(10.2, 11.2, 4.6, 1.1, '#2563eb', 0.96, 'opacity=".9"');
-  g += faceL(10.5, 12.3, 0.25, 'CIRCULATION', 8, '#2563eb', 700);
+  g += '<g data-map="desk" class="hot">' + box(10.2, 11.2, 0, 4.6, 1.1, 0.95, '#ffffff') + flat(10.2, 11.2, 4.6, 1.1, '#2563eb', 0.96, 'opacity=".9"');
+  g += faceL(10.5, 12.3, 0.25, 'CIRCULATION', 8, '#2563eb', 700) + '</g>';
   // trees
-  [[0.9, 1.2], [0.8, 7.4, 12], [6.3, 0.7, 12], [23.2, 18.5], [19.5, 20.5, 13], [23, 22.8, 12], [3.5, 22.3], [1.2, 20], [7.6, 21.3, 12], [12.5, 0.4, 11]]
+  [[0.9, 1.2], [0.8, 7.4, 12], [6.3, 0.7, 12], [23.2, 18.5], [19.5, 20.5, 13], [23, 22.8, 12], [3.9, 23.5, 10], [7.6, 21.3, 12], [12.5, 0.4, 11]]
     .forEach(([x, y, r]) => g += tree(x, y, r));
   document.getElementById('ground').innerHTML = g;
   // van (used by the import worker)
@@ -715,11 +727,11 @@ function buildStatic(){
     ${box(0, 0, 0, 2.4, 1, 1.2, '#ffffff')}${box(2.4, 0.05, 0, 0.8, 0.9, 0.85, '#2563eb')}
     ${faceL(0.2, 1, 0.45, 'IMPORT', 9, '#2563eb', 800)}</g>`;
   document.getElementById('labels').innerHTML = labelPin(4.2, 10.8, 1.6, 'Books · Reservable', '#c27a34') + labelPin(20.9, 1.2, 1.6, 'DVDs', '#5b63e6')
-    + labelPin(20.9, 10.9, 1.6, 'Magazines', '#d9466d') + labelPin(3.6, 4.4, 3.6, 'lms.db', '#2563eb') + labelPin(12.3, 4.7, 4.3, 'Library · Repository<T>', '#1d4ed8');
+    + labelPin(20.9, 10.9, 1.6, 'Magazines', '#d9466d') + labelPin(4.2, 18.9, 1.6, 'Your subclasses', '#0f9488') + labelPin(3.6, 4.4, 3.6, 'lms.db', '#2563eb') + labelPin(12.3, 4.7, 4.3, 'Library · Repository<T>', '#1d4ed8');
 }
 
 function itemShape(type){
-  const c = COLORS[type];
+  const c = COLORS[type] || '#2bb3a0';
   let deco = '';
   if (type === 'Book') deco = `<polygon points="${pts([[0.4,0,0.56],[0.55,0,0.56],[0.55,0.95,0.56],[0.4,0.95,0.56]])}" fill="${shade(c,-0.25)}" opacity=".7"/>`;
   if (type === 'DVD') { const [x, y] = P(0.47, 0.47, 0.56); deco = `<ellipse cx="${x}" cy="${y}" rx="8" ry="4.5" fill="#fff" opacity=".85"/><ellipse cx="${x}" cy="${y}" rx="2.2" ry="1.3" fill="${c}"/>`; }
@@ -739,11 +751,11 @@ function renderScene(opts = {}){
   const dyn = document.getElementById('dyn');
   const items = library.getItems(), members = library.getMembers();
   const mpos = new Map(members.map((m, i) => [m.getMemberId(), memberWorld(i)]));
-  const typeIdx = { Book: 0, DVD: 0, Magazine: 0 }, held = new Map();
+  const typeIdx = { Book: 0, DVD: 0, Magazine: 0, Lab: 0 }, held = new Map();
   const match = STATE.searchQ.trim() ? new Set(library.search(STATE.searchQ).map(i => i.getId())) : null;
   let ghosts = ''; const live = new Set();
   for (const it of items){
-    const type = it.constructor.name, z = ZONES[type], idx = typeIdx[type]++;
+    const type = it.constructor.name, zk = ZONES[type] ? type : 'Lab', z = ZONES[zk], idx = typeIdx[zk]++;
     const slot = z.slots[idx % z.slots.length], layer = Math.floor(idx / z.slots.length);
     let wx, wy, wz, sc = 1;
     if (it.isBorrowed()){
@@ -779,7 +791,7 @@ function renderScene(opts = {}){
       dyn.appendChild(g); memEls.set(id, g);
     }
     const [sx, sy] = P(mx, my, 0); setTf(g, sx, sy); g.dataset.depth = mx + my + 0.3;
-    const staff = m instanceof Staff, col = staff ? '#f59e0b' : '#2563eb';
+    const staff = m instanceof Staff, col = staff ? '#f59e0b' : m instanceof Student ? '#2563eb' : '#0f9488';
     const full = m.getBorrowedCount() >= m.getMaxBorrowLimit();
     const ini = m.getName().split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
     const nm = esc(m.getName()), nw = m.getName().length * 6.3 + 20, badge = `${m.getBorrowedCount()}/${m.getMaxBorrowLimit()}`;
@@ -806,7 +818,8 @@ function flowLine(fromW, toW){
 function pulseDb(){ const d = document.getElementById('db'); if (!d) return; d.classList.remove('pulse'); void d.getBoundingClientRect(); d.classList.add('pulse'); }
 function worldOfItem(id){
   const items = library.getItems(); const it = items.find(i => i.getId() === id); const t = it.constructor.name;
-  const idx = items.filter(i => i.constructor.name === t).indexOf(it); return ZONES[t].slots[idx % ZONES[t].slots.length];
+  const zoneOf = n => ZONES[n] ? n : 'Lab', zk = zoneOf(t);
+  const idx = items.filter(i => zoneOf(i.constructor.name) === zk).indexOf(it); return ZONES[zk].slots[idx % ZONES[zk].slots.length];
 }
 const worldOfMember = id => memberWorld(library.getMembers().findIndex(m => m.getMemberId() === id));
 
@@ -816,7 +829,8 @@ const view = { k: 1, tx: 0, ty: 0 };
 const applyView = () => world.setAttribute('transform', `translate(${view.tx},${view.ty}) scale(${view.k})`);
 function fit(){
   const r = svg.getBoundingClientRect(), mobile = innerWidth <= 1180;
-  const f = mobile ? { l: 0, t: 10, r: r.width, b: r.height } : { l: 70, t: 120, r: r.width - 392, b: r.height - 240 };
+  let f = mobile ? { l: 0, t: 10, r: r.width, b: r.height } : { l: 70, t: 120, r: r.width - 392, b: r.height - 240 };
+  if (!mobile && typeof LAB !== 'undefined' && LAB.open) f = { l: document.getElementById('lab').getBoundingClientRect().right - r.left + 24, t: 30, r: r.width - 24, b: r.height - 30 };
   const bw = 1150, bh = 720;
   view.k = Math.max(0.3, Math.min(1.5, Math.min((f.r - f.l) / bw, (f.b - f.t) / bh)));
   view.tx = (f.l + f.r) / 2; view.ty = (f.t + f.b) / 2 - 250 * view.k; applyView();
@@ -943,8 +957,9 @@ const ICONS = {
   Magazine: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   Student: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   Staff: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M12 14l1.5 3h-3z"/>' };
-const icon = (t, size = 16) => `<span class="ic ${t}"><svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[t]}</svg></span>`;
-const detailOf = i => i instanceof Book ? i.getAuthor() : i instanceof DVD ? `${i.getDurationMinutes()} min` : `Issue #${i.getIssueNumber()}`;
+const icon = (t, size = 16) => `<span class="ic ${ICONS[t] ? t : 'Lab'}"><svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[t] || ICONS.Lab}</svg></span>`;
+ICONS.Lab = '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/>';
+const detailOf = i => i.labDescribe ? i.labDescribe() : i instanceof Book ? i.getAuthor() : i instanceof DVD ? `${i.getDurationMinutes()} min` : `Issue #${i.getIssueNumber()}`;
 function statusOf(i){
   const lo = LoanDAO.openLoan(i.getId());
   if (lo && STATE.today - lo.borrowedAt > LibraryController.loanDays()) return ['red', 'Overdue'];
@@ -1002,6 +1017,7 @@ function renderInspector(){
 }
 
 function classSig(i){
+  if (window.labSig){ const s = labSig(i); if (s) return s; }
   const t = i.constructor.name;
   const extra = t === 'Book' ? ` <span class="kw">implements</span> <span class="ty">Reservable</span>` : '';
   const fld = t === 'Book' ? `<span class="kw">private</span> <span class="ty">String</span> author;\n  <span class="kw">private</span> <span class="ty">Member</span> reservedBy;`
@@ -1022,6 +1038,7 @@ function itemInspector(i){
   if (i instanceof Book) fields.push(['author', i.getAuthor()]);
   if (i instanceof DVD) fields.push(['durationMinutes', i.getDurationMinutes()]);
   if (i instanceof Magazine) fields.push(['issueNumber', i.getIssueNumber()]);
+  if (i.labFields) fields.push(...i.labFields());
   fields.push(['isBorrowed', i.isBorrowed()], ['borrower', i.getBorrower() ? i.getBorrower().getName() : 'null']);
   if (i instanceof Book) fields.push(['reservedBy', i.getReservedBy() ? i.getReservedBy().getName() : 'null']);
   const members = library.getMembers();
@@ -1048,8 +1065,8 @@ function itemInspector(i){
     <p class="note">The same call, <code>item.calculateLateFee(d)</code>, runs a different method body for each subclass. Java picks the body at runtime from the object's real class (dynamic dispatch).</p>`;
 }
 function feeRows(cur){
-  const d = STATE.feeDays, rates = { Book: 10, DVD: 25, Magazine: 5 }, max = 30 * 25;
-  return Object.entries(rates).map(([t, r]) => `<div class="fee-row ${t === cur ? 'me' : ''}"><span>${t}</span><div class="bar"><i style="width:${d * r / max * 100}%;background:${t === 'Book' ? 'var(--book)' : t === 'DVD' ? 'var(--dvd)' : 'var(--mag)'}"></i></div><span class="mono">${(d * r).toFixed(1)}</span></div>`).join('');
+  const d = STATE.feeDays, rates = { Book: 10, DVD: 25, Magazine: 5, ...(window.labRates ? labRates() : {}) }, max = 30 * Math.max(...Object.values(rates));
+  return Object.entries(rates).map(([t, r]) => `<div class="fee-row ${t === cur ? 'me' : ''}"><span>${t}</span><div class="bar"><i style="width:${d * r / max * 100}%;background:${t === 'Book' ? 'var(--book)' : t === 'DVD' ? 'var(--dvd)' : t === 'Magazine' ? 'var(--mag)' : '#14b8a6'}"></i></div><span class="mono">${(d * r).toFixed(1)}</span></div>`).join('');
 }
 
 function memberInspector(m){
@@ -1147,7 +1164,7 @@ function renderDock(){
 }
 
 function renderAll(){ renderHeader(); renderKPIs(); renderScene(); renderInspector(); renderDock(); }
-function select(kind, id){ STATE.sel = kind ? { kind, id } : null; renderScene(); renderInspector(); if (innerWidth <= 1180 && kind) document.querySelector('.inspector').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+function select(kind, id){ STATE.sel = kind ? { kind, id } : null; renderScene(); renderInspector(); window.labOnSelect?.(kind, id); if (innerWidth <= 1180 && kind) document.querySelector('.inspector').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 
 /* ---- toasts & modals ---- */
 function toast(kind, title, msg){
@@ -1162,38 +1179,53 @@ function closeModal(){ modal.classList.remove('open'); }
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
 function nextId(prefix, exists){ let n = 1; while (exists(prefix + String(n).padStart(3, '0'))) n++; return prefix + String(n).padStart(3, '0'); }
-function openAddItem(){
-  let type = 'Book';
-  const pre = { Book: 'B', DVD: 'D', Magazine: 'M' }, lbl = { Book: 'Author', DVD: 'Duration (minutes)', Magazine: 'Issue number' };
+function openAddItem(preset){
+  const custom = window.LAB_TYPES || {};
+  const types = ['Book', 'DVD', 'Magazine', ...Object.keys(custom)];
+  let type = typeof preset === 'string' && types.includes(preset) ? preset : 'Book';
+  const pre = t => ({ Book: 'B', DVD: 'D', Magazine: 'M' }[t] || custom[t].prefix);
+  const lbl = t => ({ Book: 'Author', DVD: 'Duration (minutes)', Magazine: 'Issue number' }[t] ?? custom[t].detailLabel);
   openModal(`<h3>Add item</h3><div class="ins-sub">MainFrame → <code>controller.addItem(type, id, title, detail)</code></div>
-    <div class="form"><div class="seg" id="tSeg">${['Book', 'DVD', 'Magazine'].map(t => `<button data-t="${t}" class="${t === type ? 'on' : ''}" style="flex:1;padding:6px">${t}</button>`).join('')}</div>
-    <label>id<input id="fId"/></label><label>title<input id="fTitle" placeholder="e.g. Thinking in Java"/></label><label><span id="fDetailL">${lbl.Book}</span><input id="fDetail"/></label>
+    <div class="form"><div class="seg" id="tSeg" style="flex-wrap:wrap">${types.map(t => `<button data-t="${esc(t)}" style="flex:1;padding:6px">${esc(t)}${custom[t] ? ' ✦' : ''}</button>`).join('')}</div>
+    <label>id<input id="fId"/></label><label>title<input id="fTitle" placeholder="e.g. Thinking in Java"/></label>
+    <label id="fDetailW"><span id="fDetailL"></span><input id="fDetail"/></label><label id="fExtraW"><span id="fExtraL"></span><input id="fExtra"/></label>
     <div class="err-box" id="fErr"></div>
-    <p class="note">To see validation fail, leave a field blank, type letters into Duration, or reuse an id that exists.</p></div>
+    <p class="note" id="fNote"></p></div>
     <div class="m-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="fOk">Add item</button></div>`);
   const $ = s => card.querySelector(s);
-  const setType = t => { type = t; card.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $('#fDetailL').textContent = lbl[t]; $('#fId').value = nextId(pre[t], id => library.hasItem(id)); };
+  const setType = t => {
+    type = t; card.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+    const dl = lbl(t), ex = custom[t]?.extraLabel;
+    $('#fDetailW').style.display = dl ? '' : 'none'; $('#fDetailL').textContent = dl || '';
+    $('#fExtraW').style.display = ex ? '' : 'none'; $('#fExtraL').textContent = ex || '';
+    $('#fNote').innerHTML = custom[t] ? `<b>${esc(t)}</b> is the class you wrote in the OOP Lab. Its constructor calls <code>super(...)</code>, so ${esc(custom[t].parent)} still checks its own fields.`
+      : 'To see validation fail, leave a field blank, type letters into Duration, or reuse an id that exists.';
+    $('#fId').value = nextId(pre(t), id => library.hasItem(id));
+  };
   card.querySelectorAll('#tSeg button').forEach(b => b.onclick = () => setType(b.dataset.t));
-  setType('Book'); $('#fTitle').focus();
+  setType(type); $('#fTitle').focus();
   $('#fOk').onclick = () => {
-    const id = $('#fId').value.trim(), title = $('#fTitle').value.trim(), detail = $('#fDetail').value.trim();
+    const id = $('#fId').value.trim(), title = $('#fTitle').value.trim(), detail = $('#fDetail').value.trim(), extra = $('#fExtra').value.trim();
     const { error, result } = runOp('Add item', `addButton → controller.addItem("${type}", "${id}", "${title}", "${detail}")`, ['Encapsulation', 'Inheritance', 'JDBC'],
-      () => controller.addItem(type, id, title, detail));
+      () => controller.addItem(type, id, title, detail, extra));
     if (error){ $('#fErr').textContent = `${error.name}: ${error.message}`; $('#fErr').classList.add('show'); return; }
     STATE.added++; LAST_OP.okMsg = `${type} ${id} saved to lms.db, then added to the Repository.`; renderTracker(false);
     closeModal(); toast('ok', 'Item added', LAST_OP.okMsg); select('item', result.getId()); renderKPIs(0);
   };
 }
-function openAddMember(){
-  let type = 'Student';
+function openAddMember(preset){
+  const custom = window.LAB_MEMBER_TYPES || {};
+  const types = ['Student', 'Staff', ...Object.keys(custom)];
+  const limitOf = t => t === 'Student' ? 3 : t === 'Staff' ? 10 : custom[t].limit;
+  let type = typeof preset === 'string' && types.includes(preset) ? preset : 'Student';
   openModal(`<h3>New member</h3><div class="ins-sub"><code>controller.addMember(type, id, name)</code></div>
-    <div class="form"><div class="seg" id="tSeg"><button data-t="Student" class="on" style="flex:1;padding:6px">Student · limit 3</button><button data-t="Staff" style="flex:1;padding:6px">Staff · limit 10</button></div>
+    <div class="form"><div class="seg" id="tSeg" style="flex-wrap:wrap">${types.map(t => `<button data-t="${esc(t)}" style="flex:1;padding:6px">${esc(t)} · limit ${limitOf(t)}${custom[t] ? ' ✦' : ''}</button>`).join('')}</div>
     <label>memberId<input id="fId"/></label><label>name<input id="fName" placeholder="e.g. Nethmi Wickramasinghe"/></label><div class="err-box" id="fErr"></div></div>
     <div class="m-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="fOk">Create member</button></div>`);
   const $ = s => card.querySelector(s);
-  const setType = t => { type = t; card.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $('#fId').value = nextId(t === 'Staff' ? 'T' : 'S', id => library.hasMember(id)); };
+  const setType = t => { type = t; card.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $('#fId').value = nextId(t === 'Staff' ? 'T' : t === 'Student' ? 'S' : custom[t].prefix, id => library.hasMember(id)); };
   card.querySelectorAll('#tSeg button').forEach(b => b.onclick = () => setType(b.dataset.t));
-  setType('Student'); $('#fName').focus();
+  setType(type); $('#fName').focus();
   $('#fOk').onclick = () => {
     const id = $('#fId').value.trim(), name = $('#fName').value.trim();
     const { error, result } = runOp('New member', `newMemberButton → controller.addMember("${type}", "${id}", "${name}")`, ['Inheritance', 'super()', 'JDBC'], () => controller.addMember(type, id, name));
@@ -1326,5 +1358,6 @@ LAST_OP = { id: ++STATE.opSeq, title: 'Start-up', call: 'GuiMain.main() → cont
 renderAll(); renderTracker(true); fit();
 checkerTick(); setInterval(checkerTick, 3000);
 </script>
+<script src="oop-lab.js"></script>
 </body>
 </html>
