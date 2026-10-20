@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LMS Live Demo</title>
+<meta name="description" content="Interactive, visual demo of the SENG 12233 Library Management System: encapsulation, inheritance, interfaces, exceptions, MVC, generics, JDBC and threads."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#e9f0fb; --panel:#ffffff; --ink:#0f172a; --ink-2:#334155; --muted:#64748b; --line:#e5eaf2; --soft:#f4f7fc;
+  --blue:#2563eb; --blue-50:#eef4ff; --blue-100:#dbe7ff;
+  --green:#15803d; --green-50:#dcfce7; --amber:#b45309; --amber-50:#fef3c7; --red:#dc2626; --red-50:#fee2e2;
+  --book:#c27a34; --dvd:#5b63e6; --mag:#d9466d; --staff:#f59e0b;
+  --l-view:#2563eb; --l-ctrl:#7c3aed; --l-model:#0891b2; --l-dao:#d97706; --l-db:#475569;
+  --shadow:0 12px 32px rgba(30,58,110,.10), 0 2px 6px rgba(30,58,110,.06);
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Inter,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;overflow:hidden}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font:inherit;color:inherit}
+code,.mono{font-family:var(--mono);font-size:.92em}
+a{color:inherit;text-decoration:none}
+
+/* ---------- Top bar ---------- */
+.topbar{height:64px;display:flex;align-items:center;gap:16px;padding:0 20px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);position:relative;z-index:30}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.back{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--muted);border:1px solid var(--line)}
+.back:hover{color:var(--blue);border-color:var(--blue-100)}
+.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:grid;place-items:center;box-shadow:0 4px 12px rgba(37,99,235,.35)}
+.brand b{font-size:17px;letter-spacing:-.01em;display:block;line-height:1.1}
+.brand small{color:var(--muted);font-size:11px;white-space:nowrap}
+.search{flex:1;max-width:520px;position:relative;margin-left:12px}
+.search input{width:100%;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--soft);padding:0 44px 0 38px;outline:none;transition:border-color .2s, box-shadow .2s}
+.search input:focus{border-color:#93b4f8;box-shadow:0 0 0 4px rgba(37,99,235,.12);background:#fff}
+.search .s-ic{position:absolute;left:12px;top:12px;color:var(--muted)}
+.search kbd{position:absolute;right:10px;top:10px;font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted);background:#fff}
+.dropdown{position:absolute;top:46px;left:0;right:0;background:#fff;border-radius:14px;box-shadow:var(--shadow);border:1px solid var(--line);padding:6px;display:none;z-index:40}
+.dropdown.open{display:block}
+.dropdown .dd-head{padding:6px 8px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;gap:8px}
+.dropdown .dd-row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:9px;cursor:pointer}
+.dropdown .dd-row:hover{background:var(--blue-50)}
+.spacer{flex:1}
+.hub{display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.hub-badge{width:30px;height:30px;border-radius:8px;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:700;font-size:10px}
+.hub b{display:block;font-size:12.5px}.hub small{color:var(--muted);font-size:11px}
+.clock{display:flex;align-items:center;gap:8px;padding:0 6px 0 12px;height:36px;border-radius:999px;background:var(--green-50);color:var(--green);font-weight:600;font-size:12px;white-space:nowrap}
+.clock button{height:26px;padding:0 10px;border-radius:999px;background:#fff;color:var(--ink);font-weight:600;font-size:11.5px;border:1px solid #bbf7d0}
+.clock button:hover{border-color:var(--green)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:live 1.8s infinite}
+@keyframes live{70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.user{display:flex;align-items:center;gap:10px}
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px}
+.user b{display:block;font-size:12.5px}.user small{color:var(--muted);font-size:11px}
+
+/* ---------- Stage ---------- */
+.stage{position:relative;height:calc(100vh - 64px);min-height:640px;overflow:hidden;
+  background:radial-gradient(1200px 600px at 40% 40%, #f6f9ff 0%, var(--bg) 70%)}
+#scene{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none;user-select:none}
+#scene.dragging{cursor:grabbing}
+.overlay{position:absolute;z-index:5}
+.panel{background:rgba(255,255,255,.96);border:1px solid rgba(226,232,240,.9);border-radius:18px;box-shadow:var(--shadow);backdrop-filter:blur(10px)}
+
+/* KPIs */
+.kpis{top:16px;left:16px;display:flex;gap:12px;flex-wrap:wrap;max-width:calc(100% - 420px)}
+.kpi{display:flex;gap:12px;align-items:center;padding:12px 16px 12px 12px;min-width:186px}
+.kpi .k-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.kpi .k-lbl{font-size:11.5px;color:var(--muted);font-weight:500}
+.kpi .k-val{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.15;display:flex;align-items:baseline;gap:8px}
+.kpi .k-sub{font-size:11px;color:var(--muted)}
+.delta{font-size:11px;font-weight:600;color:var(--green);background:var(--green-50);border-radius:6px;padding:1px 6px}
+.delta.red{color:var(--red);background:var(--red-50)}
+.kpi.flash{animation:flash .8s}
+@keyframes flash{0%{box-shadow:0 0 0 0 rgba(37,99,235,.45),var(--shadow)}100%{box-shadow:0 0 0 14px rgba(37,99,235,0),var(--shadow)}}
+
+.actions{top:100px;left:16px;display:flex;gap:8px;flex-wrap:wrap}
+.btn{height:36px;padding:0 14px;border-radius:11px;display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:12.5px;background:#fff;border:1px solid var(--line);box-shadow:0 2px 6px rgba(30,58,110,.06);transition:transform .15s, border-color .15s, background .15s;white-space:nowrap}
+.btn:hover{border-color:#b6cbf5;transform:translateY(-1px)}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.primary:hover{background:#1d4ed8}
+.btn.sm{height:30px;padding:0 10px;font-size:12px;border-radius:9px}
+.btn.danger{color:var(--red)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+.zoom{left:16px;top:152px;display:flex;flex-direction:column;padding:4px;gap:2px;border-radius:14px}
+.zoom button{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--ink-2);font-size:18px}
+.zoom button:hover{background:var(--blue-50);color:var(--blue)}
+.hint{position:absolute;left:62px;top:156px;z-index:4;font-size:11.5px;color:var(--muted);background:rgba(255,255,255,.8);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+
+/* Inspector */
+.inspector{top:16px;right:16px;width:368px;bottom:300px;display:flex;flex-direction:column;overflow:hidden}
+.ins-scroll{overflow-y:auto;padding:16px;flex:1}
+.ins-scroll::-webkit-scrollbar,.dock-body::-webkit-scrollbar,.log::-webkit-scrollbar{width:6px}
+.ins-scroll::-webkit-scrollbar-thumb,.dock-body::-webkit-scrollbar-thumb,.log::-webkit-scrollbar-thumb{background:#d7deea;border-radius:6px}
+.eyebrow{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ins-title{font-size:18px;font-weight:700;letter-spacing:-.01em;margin-top:2px}
+.ins-sub{color:var(--muted);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:7px;background:var(--soft);color:var(--ink-2);white-space:nowrap}
+.chip.green{background:var(--green-50);color:var(--green)}.chip.blue{background:var(--blue-50);color:var(--blue)}
+.chip.amber{background:var(--amber-50);color:var(--amber)}.chip.red{background:var(--red-50);color:var(--red)}
+.chip.violet{background:#ede9fe;color:#6d28d9}
+.stats2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.stat{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat .s-l{font-size:11px;color:var(--muted)}.stat .s-v{font-size:17px;font-weight:700}
+.stat .s-v small{font-size:11px;color:var(--muted);font-weight:500}
+.bar{height:6px;border-radius:6px;background:#e8edf5;overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:6px;background:var(--blue);transition:width .5s}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px}
+.sec-h b{font-size:13px}
+.seg{display:flex;background:var(--soft);border-radius:9px;padding:3px;gap:2px}
+.seg button{padding:3px 8px;border-radius:7px;font-size:11px;font-weight:600;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:10px;cursor:pointer;border-bottom:1px solid #f0f3f8}
+.row:hover{background:var(--blue-50)}
+.row .r-main{flex:1;min-width:0}
+.row .r-t{font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .r-s{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none}
+.ic.Book{background:#fdf0e1;color:var(--book)}.ic.DVD{background:#e9eaff;color:var(--dvd)}.ic.Magazine{background:#fde6ec;color:var(--mag)}
+.ic.Student{background:var(--blue-50);color:var(--blue)}.ic.Staff{background:var(--amber-50);color:var(--amber)}
+.linkback{font-size:12px;color:var(--blue);font-weight:600;display:inline-flex;gap:4px;margin-bottom:10px}
+.sig{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:10px 12px;font-family:var(--mono);font-size:11.5px;line-height:1.6;margin:10px 0;overflow-x:auto;white-space:pre}
+.sig .kw{color:#f472b6}.sig .ty{color:#7dd3fc}.sig .cm{color:#64748b}.sig .st{color:#86efac}.sig .nu{color:#fbbf24}
+.fields{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.fields div{display:flex;justify-content:space-between;gap:10px;padding:6px 10px;font-size:12px;border-bottom:1px solid #f0f3f8}
+.fields div:last-child{border-bottom:none}
+.fields span:first-child{font-family:var(--mono);color:var(--muted);font-size:11.5px}
+.fields span:last-child{font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.act{display:flex;gap:6px;align-items:center;margin-top:8px}
+.act select{flex:1;min-width:0;height:32px;border-radius:9px;border:1px solid var(--line);padding:0 8px;background:#fff}
+.fee-row{display:grid;grid-template-columns:76px 1fr 54px;gap:8px;align-items:center;font-size:12px;padding:3px 0}
+.fee-row.me{font-weight:700}
+.fee-row .bar{margin:0;height:8px}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.note{font-size:11.5px;color:var(--muted);margin-top:6px}
+.note code{color:var(--ink-2)}
+
+/* Tracker */
+.tracker{left:16px;bottom:16px;right:400px;max-width:760px;height:268px;padding:14px 16px;display:flex;flex-direction:column}
+.tr-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.tr-title{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px}
+.tr-title .tag{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:500}
+.tr-call{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);margin:14px 0 10px;position:relative}
+.step{display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;min-width:0}
+.step::before{content:'';position:absolute;top:13px;right:50%;width:100%;height:3px;background:#e3e9f3;z-index:0}
+.step:first-child::before{display:none}
+.step.done::before,.step.error::before{background:var(--blue)}
+.step .dot{width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid #dbe3ef;display:grid;place-items:center;position:relative;z-index:1;font-size:12px;font-weight:700;color:#9aa8bd;transition:all .25s}
+.step.done .dot{background:var(--blue);border-color:var(--blue);color:#fff}
+.step.error .dot{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 0 5px var(--red-50)}
+.step.active .dot{border-color:var(--blue);color:var(--blue);box-shadow:0 0 0 5px var(--blue-100)}
+.step .lbl{font-weight:600;font-size:12px;margin-top:6px}
+.step .sub{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 4px}
+.step.skip .lbl,.step.skip .sub{opacity:.45}
+.tr-body{display:flex;gap:12px;flex:1;min-height:0}
+.log{flex:1;overflow-y:auto;background:var(--soft);border-radius:12px;padding:8px 10px;font-family:var(--mono);font-size:11px;list-style:none;counter-reset:l}
+.log li{display:flex;gap:8px;padding:2px 0;opacity:0;animation:in .3s forwards;white-space:nowrap}
+.log li .ly{flex:none;width:72px;font-weight:600}
+.log li .tx{overflow:hidden;text-overflow:ellipsis}
+.log li.err .tx{color:var(--red);font-weight:600}
+@keyframes in{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.result{width:190px;flex:none;border-radius:12px;padding:10px 12px;border:1px solid var(--line);display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.result.ok{background:#f3fbf6;border-color:#c9efd7}.result.err{background:#fff5f5;border-color:#fbd0d0}
+.result .r-k{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.result .r-h{font-weight:700;font-size:13px;word-break:break-word}
+.result.ok .r-h{color:var(--green)}.result.err .r-h{color:var(--red)}
+.result .r-m{font-size:11.5px;color:var(--ink-2);overflow-y:auto}
+
+/* Dock */
+.dock{right:16px;bottom:16px;width:368px;height:268px;display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;gap:2px;padding:8px 8px 0;border-bottom:1px solid var(--line)}
+.tabs button{padding:7px 10px 9px;font-weight:600;font-size:12px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--blue);border-color:var(--blue)}
+.tabs button small{font-weight:600;color:var(--muted);margin-left:2px}
+.dock-body{flex:1;overflow-y:auto;padding:8px 12px 12px}
+.th{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
+.th .t-main{flex:1;min-width:0}
+.th b{font-size:12.5px}
+.th .t-s{font-size:11px;color:var(--muted)}
+.beat{width:10px;height:10px;border-radius:50%;background:#cbd5e1;flex:none}
+.beat.on{background:#22c55e;animation:live 1.8s infinite}
+.beat.pulse{animation:beat .6s}
+@keyframes beat{0%{transform:scale(1.8);background:#16a34a}100%{transform:scale(1)}}
+.sql{font-family:var(--mono);font-size:10.8px;line-height:1.5}
+.sql div{padding:3px 0;border-bottom:1px dashed #edf1f7;word-break:break-word}
+.sql .th-n{color:var(--muted)}
+.sql .bg{opacity:.55}
+.race{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.race .stat .s-v{font-family:var(--mono)}
+table.tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.tbl th{text-align:left;font-weight:600;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:6px 4px;border-bottom:1px solid var(--line)}
+.tbl td{padding:6px 4px;border-bottom:1px solid #f0f3f8;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+
+/* Toasts / modal */
+#toasts{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;background:#fff;border-radius:14px;padding:10px 14px;box-shadow:0 18px 40px rgba(15,23,42,.18);border:1px solid var(--line);max-width:440px;animation:tin .35s cubic-bezier(.2,.9,.3,1.2)}
+.toast .t-ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex:none;font-weight:800;color:#fff}
+.toast.err .t-ic{background:var(--red)}.toast.ok .t-ic{background:#16a34a}.toast.warn .t-ic{background:#f59e0b}
+.toast b{display:block;font-size:12.5px}.toast span{font-size:12px;color:var(--ink-2)}
+@keyframes tin{from{opacity:0;transform:translateY(-10px) scale(.96)}}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.35);backdrop-filter:blur(3px);z-index:100;display:none;place-items:center;padding:16px}
+.modal.open{display:grid}
+.modal-card{background:#fff;border-radius:20px;box-shadow:0 30px 80px rgba(15,23,42,.3);width:min(460px,100%);max-height:90vh;overflow:auto;padding:20px;animation:tin .3s}
+.modal-card h3{font-size:17px;margin-bottom:2px}
+.form{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.form label{font-size:11.5px;font-weight:600;color:var(--ink-2);display:flex;flex-direction:column;gap:4px}
+.form input{height:38px;border-radius:10px;border:1px solid var(--line);padding:0 12px;outline:none}
+.form input:focus{border-color:#93b4f8;box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+.form .err-box{background:var(--red-50);color:var(--red);border-radius:10px;padding:8px 10px;font-size:12px;display:none}
+.form .err-box.show{display:block}
+.m-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.report-bar{display:grid;grid-template-columns:120px 1fr 28px;gap:10px;align-items:center;padding:4px 0;font-size:12.5px}
+.report-bar .bar{height:12px;margin:0}
+
+/* Scene */
+.it{transition:transform .75s cubic-bezier(.45,.05,.2,1),opacity .3s;cursor:pointer}
+.it.dim,.mem.dim{opacity:.18}
+.it:hover .shape{filter:brightness(1.08)}
+.it .selpin,.it .flag,.it .od{display:none}
+.it.sel .selpin{display:block}
+.it.reserved .flag{display:block}
+.it.overdue .od{display:block}
+.it.hl .shape{filter:drop-shadow(0 0 6px rgba(37,99,235,.9))}
+.selpin{animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-5px)}}
+.od circle{animation:odp 1.4s infinite;transform-box:fill-box;transform-origin:center}
+@keyframes odp{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+.mem{cursor:pointer;transition:opacity .3s}
+.mem .mname{display:none}
+.mem:hover .mname,.mem.sel .mname{display:block}
+.mem.sel .pinbody{filter:drop-shadow(0 0 0 #fff) drop-shadow(0 4px 10px rgba(37,99,235,.55))}
+.mem .pinbody{transition:transform .2s;transform-box:fill-box;transform-origin:bottom center}
+.mem:hover .pinbody{transform:translateY(-3px)}
+.dbring{opacity:0}
+.db.pulse .dbring{animation:ring 1s}
+@keyframes ring{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.8)}}
+.dbring{transform-box:fill-box;transform-origin:center}
+.flow{fill:none;stroke:var(--blue);stroke-width:2.5;stroke-dasharray:6 6;stroke-linecap:round;animation:flow 1.2s linear forwards}
+@keyframes flow{0%{stroke-dashoffset:60;opacity:1}80%{opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+#van{transition:transform 1.4s cubic-bezier(.5,.05,.3,1),opacity .6s;opacity:0}
+#van.on{opacity:1}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1180px){
+  body{overflow:auto}
+  .topbar{flex-wrap:wrap;height:auto;padding:10px 16px;gap:10px}
+  .search{order:5;flex-basis:100%;max-width:none;margin-left:0}
+  .hub,.user{display:none}
+  .stage{height:auto;min-height:0;display:flex;flex-direction:column;gap:12px;padding:12px 16px 24px;overflow:visible}
+  .stage>*{min-width:0;max-width:100%}
+  #scene{position:relative;height:min(58vh,520px);min-height:340px;order:3;border-radius:18px;background:rgba(255,255,255,.35)}
+  .overlay{position:static;max-width:none}
+  .kpis{order:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .kpi>div{min-width:0}.kpi .k-sub,.kpi .k-lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tr-call{max-width:100%}.tr-head{flex-direction:column}
+  .clock{margin-left:auto}
+  .kpi{min-width:0}
+  .actions{order:2}
+  .zoom,.hint{display:none}
+  .tracker{order:4;height:auto;max-width:none}
+  .tr-body{flex-direction:column}
+  .result{width:auto}
+  .log{max-height:150px}
+  .inspector{order:5;width:auto;max-height:none}
+  .dock{order:6;width:auto;height:380px}
+  #toasts{position:fixed;top:12px}
+}
+@media (max-width:560px){
+  .kpi .k-val{font-size:18px}
+  .kpi{padding:10px}
+  .kpi .k-ic{display:none}
+  .steps .sub{display:none}
+  .step .lbl{font-size:10.5px}
+  .clock{font-size:11px}
+  .brand small{display:none}
+  .brand b{font-size:15px}
+  .clock #nextWeek{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <a class="back" href="../index.html" title="Back to the course page">←</a>
+    <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h14v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M8 7h8M8 11h6"/></svg></div>
+    <div><b>LMS Live</b><small>SENG 12233 · Library Management System</small></div>
+  </div>
+  <div class="search">
+    <svg class="s-ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="search" autocomplete="off" placeholder="Search titles, ids, authors…  library.search(text)"/>
+    <kbd>/</kbd>
+    <div id="searchDrop" class="dropdown"></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="hub"><span class="hub-badge">DB</span><div><b>Main Library</b><small id="hubSub"></small></div></div>
+  <div class="clock"><span class="live-dot"></span>Day <b id="dayNum"></b><button id="nextDay" title="Advance the simulated clock">+1 day</button><button id="nextWeek" title="Advance the simulated clock">+7</button></div>
+  <div class="user"><div class="avatar">LB</div><div><b>Librarian</b><small>MainFrame · EDT</small></div></div>
+</header>
+
+<main class="stage" id="stage">
+  <svg id="scene" xmlns="http://www.w3.org/2000/svg" aria-label="Isometric view of the library">
+    <defs>
+      <linearGradient id="treeG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#86efac"/><stop offset="1" stop-color="#22a35a"/></linearGradient>
+      <linearGradient id="dbG" x1="0" x2="1"><stop offset="0" stop-color="#e2e8f0"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#cbd5e1"/></linearGradient>
+    </defs>
+    <g id="world"><g id="ground"></g><g id="statics"></g><g id="ghosts"></g><g id="dyn"></g><g id="fx"></g><g id="labels"></g></g>
+  </svg>
+
+  <section class="kpis overlay" id="kpis"></section>
+  <div class="actions overlay">
+    <button class="btn primary" id="btnAddItem">+ Add item</button>
+    <button class="btn" id="btnAddMember">+ New member</button>
+    <button class="btn" id="btnImport">⇣ Import sample books</button>
+    <button class="btn" id="btnReport">▤ Loan report</button>
+  </div>
+  <div class="zoom overlay panel">
+    <button id="zIn" title="Zoom in">+</button><button id="zOut" title="Zoom out">−</button><button id="zFit" title="Fit" style="font-size:14px">⤢</button>
+  </div>
+  <div class="hint">Drag to pan · click a box or a member pin</div>
+
+  <aside class="inspector overlay panel"><div class="ins-scroll" id="inspector"></div></aside>
+  <section class="tracker overlay panel" id="tracker"></section>
+  <section class="dock overlay panel">
+    <div class="tabs" id="tabs"></div>
+    <div class="dock-body" id="dock"></div>
+  </section>
+  <div id="toasts"></div>
+</main>
+
+<div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
+
+<script>
+/* =====================================================================
+   1. THE JAVA MODEL, MIRRORED IN JAVASCRIPT
+   Same class names, same rules, same exception messages as the
+   reference solution (final/src/lms). Every call records a trace entry
+   tagged with its MVC layer so the UI can show how a request travels.
+   ===================================================================== */
+let TRACE = [];
+const T = (layer, text) => TRACE.push({ layer, text });
+
+// ---- lms.exception ----
+class ItemNotAvailableException extends Error { constructor(m){ super(m); this.name='ItemNotAvailableException'; this.kind='checked'; } }
+class MemberNotFoundException extends Error { constructor(id){ super(`No member with id '${id}'`); this.name='MemberNotFoundException'; this.kind='unchecked'; this.memberId=id; } }
+class IllegalArgumentException extends Error { constructor(m){ super(m); this.name='IllegalArgumentException'; this.kind='unchecked'; } }
+class DataAccessException extends Error { constructor(m){ super(m); this.name='DataAccessException'; this.kind='unchecked'; } }
+
+// ---- lms.model ----
+class Member {
+  #memberId; #name; #borrowedCount = 0; #maxBorrowLimit;
+  constructor(memberId, name, maxBorrowLimit){ this.setMemberId(memberId); this.setName(name); this.#maxBorrowLimit = maxBorrowLimit; }
+  getMemberId(){ return this.#memberId; }
+  getName(){ return this.#name; }
+  getBorrowedCount(){ return this.#borrowedCount; }
+  getMaxBorrowLimit(){ return this.#maxBorrowLimit; }
+  setMemberId(v){ if (v == null || !String(v).trim()) throw new IllegalArgumentException('Member ID cannot be blank'); this.#memberId = v; }
+  setName(v){ if (v == null || !String(v).trim()) throw new IllegalArgumentException('Name cannot be blank'); this.#name = v; }
+  setBorrowedCount(v){ if (v < 0) throw new IllegalArgumentException('Borrowed count cannot be negative'); this.#borrowedCount = v; }
+  incrementBorrowedCount(){ this.setBorrowedCount(this.#borrowedCount + 1); }
+  decrementBorrowedCount(){ this.setBorrowedCount(this.#borrowedCount - 1); }
+  /** Natural order: MOST active member first. */
+  compareTo(other){ return other.getBorrowedCount() - this.#borrowedCount; }
+}
+class Student extends Member { static STUDENT_BORROW_LIMIT = 3; constructor(id, name){ super(id, name, Student.STUDENT_BORROW_LIMIT); } }
+class Staff extends Member { static STAFF_BORROW_LIMIT = 10; constructor(id, name){ super(id, name, Staff.STAFF_BORROW_LIMIT); } }
+
+/** abstract class LibraryItem implements Loanable */
+class LibraryItem {
+  #id; #title; #isBorrowed = false; #borrower = null;
+  constructor(id, title){
+    if (new.target === LibraryItem) throw new TypeError('LibraryItem is abstract; cannot be instantiated');
+    this.setId(id); this.setTitle(title);
+  }
+  getId(){ return this.#id; }
+  getTitle(){ return this.#title; }
+  isBorrowed(){ return this.#isBorrowed; }
+  getBorrower(){ return this.#borrower; }
+  setId(v){ if (v == null || !String(v).trim()) throw new IllegalArgumentException('Id cannot be blank'); this.#id = v; }
+  setTitle(v){ if (v == null || !String(v).trim()) throw new IllegalArgumentException('Title cannot be blank'); this.#title = v; }
+  // ---- Loanable contract ----
+  loan(member){
+    T('model', `${this.constructor.name}.loan(${member.getMemberId()})  // inherited from LibraryItem`);
+    if (this.#isBorrowed) throw new ItemNotAvailableException(`${this.#title} is already on loan.`);
+    if (member.getBorrowedCount() >= member.getMaxBorrowLimit())
+      throw new ItemNotAvailableException(`${member.getName()} has reached the limit of ${member.getMaxBorrowLimit()} items.`);
+    this.#isBorrowed = true; this.#borrower = member; member.incrementBorrowedCount();
+    T('model', `isBorrowed = true; ${member.getMemberId()}.borrowedCount → ${member.getBorrowedCount()}`);
+  }
+  returnItem(){
+    T('model', `${this.constructor.name}.returnItem()`);
+    if (!this.#isBorrowed) throw new ItemNotAvailableException(`${this.#title} is not on loan.`);
+    this.#borrower.decrementBorrowedCount(); this.#borrower = null; this.#isBorrowed = false;
+  }
+  /** abstract: every subclass MUST override */
+  calculateLateFee(daysLate){ throw new Error('abstract method'); }
+}
+class Book extends LibraryItem {        // extends LibraryItem implements Reservable
+  #author; #reservedBy = null;
+  constructor(id, title, author){ super(id, title); this.setAuthor(author); }
+  getAuthor(){ return this.#author; }
+  setAuthor(v){ if (v == null || !String(v).trim()) throw new IllegalArgumentException('Author cannot be blank'); this.#author = v; }
+  calculateLateFee(daysLate){ return daysLate * 10.0; }
+  reserve(member){
+    if (this.#reservedBy) return { ok:false, msg:`${this.getTitle()} is already reserved by ${this.#reservedBy.getName()}` };
+    this.#reservedBy = member; return { ok:true, msg:`${this.getTitle()} reserved for ${member.getName()}` };
+  }
+  cancelReservation(){ this.#reservedBy = null; return { ok:true, msg:`Reservation cancelled for ${this.getTitle()}` }; }
+  isReserved(){ return this.#reservedBy != null; }
+  getReservedBy(){ return this.#reservedBy; }
+}
+class DVD extends LibraryItem {
+  #durationMinutes;
+  constructor(id, title, durationMinutes){ super(id, title); this.#durationMinutes = durationMinutes; }
+  getDurationMinutes(){ return this.#durationMinutes; }
+  calculateLateFee(daysLate){ return daysLate * 25.0; }
+}
+class Magazine extends LibraryItem {
+  #issueNumber;
+  constructor(id, title, issueNumber){ super(id, title); this.#issueNumber = issueNumber; }
+  getIssueNumber(){ return this.#issueNumber; }
+  calculateLateFee(daysLate){ return daysLate * 5.0; }
+}
+/** `item instanceof Reservable` - JS has no interfaces, so check the contract's methods. */
+const isReservable = x => typeof x.reserve === 'function' && typeof x.isReserved === 'function';
+
+// ---- lms.service ----
+/** Repository<T> - generic store, a Map inside for O(1) lookup by id. */
+class Repository {
+  #store = new Map(); #idOf;
+  constructor(idOf){ this.#idOf = idOf; }
+  add(e){ const id = this.#idOf(e); if (this.#store.has(id)) throw new IllegalArgumentException(`An entry with id '${id}' already exists`); this.#store.set(id, e); }
+  findById(id){ return this.#store.get(id) ?? null; }        // Optional<T>
+  exists(id){ return this.#store.has(id); }
+  findAll(){ return [...this.#store.values()]; }
+  search(pred){ return [...this.#store.values()].filter(pred); }
+  size(){ return this.#store.size; }
+}
+
+class Library {
+  #items = new Repository(i => i.getId());
+  #members = new Repository(m => m.getMemberId());
+  addItem(item){ this.#items.add(item); T('model', `items.add(${item.constructor.name} ${item.getId()})  // Repository<LibraryItem>`); }
+  addMember(m){ this.#members.add(m); T('model', `members.add(${m.constructor.name} ${m.getMemberId()})  // Repository<Member>`); }
+  hasItem(id){ return this.#items.exists(id); }
+  hasMember(id){ return this.#members.exists(id); }
+  findMember(id){
+    T('model', `library.findMember("${id}")`);
+    const m = this.#members.findById(id);
+    if (!m) throw new MemberNotFoundException(id);
+    return m;
+  }
+  findItem(id){
+    T('model', `library.findItem("${id}")`);
+    const i = this.#items.findById(id);
+    if (!i) throw new ItemNotAvailableException(`No item with id '${id}'`);
+    return i;
+  }
+  borrowItem(itemId, memberId){ const m = this.findMember(memberId); const i = this.findItem(itemId); i.loan(m); }
+  returnItem(itemId){ this.findItem(itemId).returnItem(); }
+  reserveIfPossible(item, member){
+    T('model', `item instanceof Reservable → ${isReservable(item)}`);
+    if (isReservable(item)) return item.reserve(member);
+    return { ok:false, msg:`${item.getTitle()} cannot be reserved.` };
+  }
+  getItems(){ return this.#items.findAll(); }
+  getMembers(){ return this.#members.findAll(); }
+  membersByActivity(){ return this.#members.findAll().sort((a, b) => a.compareTo(b)); }   // Collections.sort(list)
+  search(text){
+    const q = text.trim().toLowerCase();
+    return this.#items.search(i => i.getTitle().toLowerCase().includes(q) || i.getId().toLowerCase().includes(q)
+      || (i instanceof Book && i.getAuthor().toLowerCase().includes(q)));
+  }
+  /** groupingBy(borrower name, TreeMap::new, counting()) */
+  loansPerMember(){
+    const map = {};
+    this.#items.findAll().filter(i => i.isBorrowed()).forEach(i => { const n = i.getBorrower().getName(); map[n] = (map[n] || 0) + 1; });
+    return Object.fromEntries(Object.entries(map).sort(([a], [b]) => a.localeCompare(b)));
+  }
+  availableItems(){ return this.#items.findAll().filter(i => !i.isBorrowed()).sort((a, b) => a.getTitle().localeCompare(b.getTitle())); }
+}
+
+// ---- lms.dao : an in-memory stand-in for SQLite that logs the real SQL ----
+const SQL_LOG = [];
+const DB = { items: [], members: [], loans: [], failNext: false };
+function sqlLog(sql, thread = 'AWT-EventQueue-0'){
+  SQL_LOG.push({ t: clockStr(), thread, sql });
+  if (SQL_LOG.length > 150) SQL_LOG.shift();
+  if (!thread.startsWith('overdue') && !BOOTING) pulseDb();
+}
+const q = v => typeof v === 'number' ? v : `'${String(v).replace(/'/g, "''")}'`;
+function maybeFail(){
+  if (DB.failNext){ DB.failNext = false; T('db', 'SQLException: [SQLITE_BUSY] database is locked'); T('dao', 'catch (SQLException e) → throw new DataAccessException(...)');
+    throw new DataAccessException('Could not save to the database (database is locked)'); }
+}
+const ItemDAO = {
+  insert(item){
+    const type = item.constructor.name;
+    const detail = item instanceof Book ? item.getAuthor() : item instanceof DVD ? item.getDurationMinutes() : item.getIssueNumber();
+    const sql = `INSERT INTO items (id, type, title, detail) VALUES (${q(item.getId())}, ${q(type)}, ${q(item.getTitle())}, ${q(String(detail))})`;
+    T('dao', `itemDAO.insert(${item.getId()})  // PreparedStatement`); maybeFail(); T('db', sql);
+    DB.items.push({ id: item.getId(), type }); sqlLog(sql, CUR_THREAD);
+  }
+};
+const MemberDAO = {
+  insert(m){
+    const sql = `INSERT INTO members (id, type, name) VALUES (${q(m.getMemberId())}, ${q(m.constructor.name)}, ${q(m.getName())})`;
+    T('dao', `memberDAO.insert(${m.getMemberId()})`); maybeFail(); T('db', sql);
+    DB.members.push({ id: m.getMemberId() }); sqlLog(sql);
+  }
+};
+const LoanDAO = {
+  recordLoan(itemId, memberId){
+    const sql = `INSERT INTO loans (item_id, member_id, borrowed_at) VALUES (${q(itemId)}, ${q(memberId)}, ${q('day ' + STATE.today)})`;
+    T('dao', `loanDAO.recordLoan("${itemId}", "${memberId}")`); maybeFail(); T('db', sql);
+    DB.loans.push({ itemId, memberId, borrowedAt: STATE.today, returnedAt: null }); sqlLog(sql);
+  },
+  recordReturn(itemId){
+    const sql = `UPDATE loans SET returned_at = ${q('day ' + STATE.today)} WHERE item_id = ${q(itemId)} AND returned_at IS NULL`;
+    T('dao', `loanDAO.recordReturn("${itemId}")`); maybeFail(); T('db', sql);
+    const row = DB.loans.find(l => l.itemId === itemId && l.returnedAt == null); if (row) row.returnedAt = STATE.today; sqlLog(sql);
+  },
+  openLoan(itemId){ return DB.loans.find(l => l.itemId === itemId && l.returnedAt == null); },
+  countOverdue(loanDays){
+    const cutoff = STATE.today - loanDays;
+    sqlLog(`SELECT COUNT(*) FROM loans WHERE returned_at IS NULL AND borrowed_at < ${q('day ' + cutoff)}`, 'overdue-checker');
+    return DB.loans.filter(l => l.returnedAt == null && l.borrowedAt < cutoff).length;
+  },
+  history(){ return DB.loans.slice().reverse(); }
+};
+
+// ---- the C in MVC ----
+class LibraryController {
+  constructor(library){ this.library = library; }
+  static loanDays(){ return 14; }
+  addItem(type, id, title, detail){
+    T('controller', `addItem("${type}", "${id}", "${title}", "${detail}")`);
+    if (this.library.hasItem(id)) throw new IllegalArgumentException(`An item with id '${id}' already exists`);
+    T('controller', `new ${type}(...)  // constructor + setters validate`);
+    let item;
+    switch (type){
+      case 'Book': item = new Book(id, title, detail); break;
+      case 'DVD': item = new DVD(id, title, this.#parseWholeNumber(detail, 'Duration')); break;
+      case 'Magazine': item = new Magazine(id, title, this.#parseWholeNumber(detail, 'Issue number')); break;
+      default: throw new IllegalArgumentException('Unknown item type: ' + type);
+    }
+    T('model', `${type} created; fields are private, set through validated setters`);
+    ItemDAO.insert(item);           // validate → save to DB → add to memory
+    this.library.addItem(item);
+    return item;
+  }
+  addMember(type, id, name){
+    T('controller', `addMember("${type}", "${id}", "${name}")`);
+    if (this.library.hasMember(id)) throw new IllegalArgumentException(`A member with id '${id}' already exists`);
+    const m = type === 'Staff' ? new Staff(id, name) : new Student(id, name);
+    T('model', `new ${m.constructor.name}(...) → super(id, name, ${m.getMaxBorrowLimit()})`);
+    MemberDAO.insert(m);
+    this.library.addMember(m);
+    return m;
+  }
+  borrow(itemId, memberId){
+    T('controller', `borrow("${itemId}", "${memberId}")`);
+    this.library.borrowItem(itemId, memberId);      // rules first
+    try { LoanDAO.recordLoan(itemId, memberId); }   // then persist
+    catch (e){
+      T('controller', `rollback → library.returnItem("${itemId}")`);
+      this.library.returnItem(itemId);              // undo the in-memory change
+      throw e;
+    }
+  }
+  giveBack(itemId){
+    T('controller', `giveBack("${itemId}")`);
+    this.library.returnItem(itemId);
+    LoanDAO.recordReturn(itemId);
+  }
+  countOverdue(){ return LoanDAO.countOverdue(LibraryController.loanDays()); }
+  search(text){
+    T('controller', `search("${text}")`);
+    if (!text || !text.trim()){ T('controller', 'blank search → library.getItems()'); return this.library.getItems(); }
+    T('model', 'items.search(i -> title / id / author contains q)  // stream().filter()');
+    return this.library.search(text);
+  }
+  #parseWholeNumber(text, label){
+    const s = String(text ?? '').trim();
+    if (!/^[+-]?\d+$/.test(s)) throw new IllegalArgumentException(`${label} must be a whole number`);
+    return parseInt(s, 10);
+  }
+}
+
+/* =====================================================================
+   2. APP STATE + SEED DATA  (what loadFromDatabase() would rebuild)
+   ===================================================================== */
+const STATE = { today: 20, sel: null, catFilter: 'All', tab: 'members', sortByActivity: false, searchQ: '',
+  feeDays: 3, checkerOn: true, lastCheck: null, overdue: 0, importing: false, importPct: 0, importMsg: 'Not started',
+  race: null, added: 0, opSeq: 0 };
+let BOOTING = true, CUR_THREAD = 'AWT-EventQueue-0';
+const library = new Library();
+const controller = new LibraryController(library);
+
+(function seed(){
+  [['Book','B001','Clean Code','Robert C. Martin'],['Book','B002','Effective Java','Joshua Bloch'],['Book','B003','Head First Java','Kathy Sierra'],
+   ['Book','B004','Refactoring','Martin Fowler'],['DVD','D001','The Social Network','120'],['DVD','D002','Hidden Figures','127'],
+   ['DVD','D003','The Imitation Game','114'],['Magazine','M001','IEEE Software','42'],['Magazine','M002','Wired','318']]
+   .forEach(a => controller.addItem(...a));
+  [['Student','S001','Amaya Perera'],['Student','S002','Kasun Silva'],['Staff','T001','Dilani Fernando'],['Student','S003','Ravi Jayasinghe']]
+   .forEach(a => controller.addMember(...a));
+  const day = STATE.today;
+  [['B002','S001',3],['M001','S001',18],['D001','T001',17],['B004','S002',12]].forEach(([i, m, d]) => { STATE.today = d; controller.borrow(i, m); });
+  STATE.today = day;
+  library.getItems()[0].reserve(library.findMember('S002'));
+  SQL_LOG.length = 0;
+  ['-- DriverManager.getConnection("jdbc:sqlite:lms.db")',
+   'CREATE TABLE IF NOT EXISTS items (id TEXT PRIMARY KEY, type TEXT NOT NULL, title TEXT NOT NULL, detail TEXT)',
+   'CREATE TABLE IF NOT EXISTS members (id TEXT PRIMARY KEY, type TEXT NOT NULL, name TEXT NOT NULL)',
+   'CREATE TABLE IF NOT EXISTS loans (id INTEGER PRIMARY KEY AUTOINCREMENT, item_id TEXT, member_id TEXT, borrowed_at TEXT, returned_at TEXT)',
+   'SELECT id, type, title, detail FROM items', 'SELECT id, type, name FROM members',
+   'SELECT item_id, member_id FROM loans WHERE returned_at IS NULL'].forEach(s => sqlLog(s, 'main'));
+  TRACE = [];
+  BOOTING = false;
+})();
+
+/* =====================================================================
+   3. ISOMETRIC SCENE
+   ===================================================================== */
+const S = 26, CX = 0.866 * S, CY = 0.5 * S;
+const P = (x, y, z = 0) => [(x - y) * CX, (x + y) * CY - z * S];
+const pts = arr => arr.map(p => P(...p).map(n => n.toFixed(1)).join(',')).join(' ');
+function shade(hex, f){
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const t = f < 0 ? 0 : 255, p = Math.abs(f);
+  r = Math.round((t - r) * p + r); g = Math.round((t - g) * p + g); b = Math.round((t - b) * p + b);
+  return `rgb(${r},${g},${b})`;
+}
+function box(x, y, z, w, d, h, col, extra = ''){
+  const st = `stroke="${shade(col, -0.32)}" stroke-width=".6" stroke-linejoin="round"`;
+  return `<g ${extra}>
+    <polygon points="${pts([[x,y+d,z],[x+w,y+d,z],[x+w,y+d,z+h],[x,y+d,z+h]])}" fill="${shade(col,-0.06)}" ${st}/>
+    <polygon points="${pts([[x+w,y,z],[x+w,y+d,z],[x+w,y+d,z+h],[x+w,y,z+h]])}" fill="${shade(col,-0.22)}" ${st}/>
+    <polygon points="${pts([[x,y,z+h],[x+w,y,z+h],[x+w,y+d,z+h],[x,y+d,z+h]])}" fill="${shade(col,0.16)}" ${st}/></g>`;
+}
+const flat = (x, y, w, d, fill, z = 0, extra = '') => `<polygon points="${pts([[x,y,z],[x+w,y,z],[x+w,y+d,z],[x,y+d,z]])}" fill="${fill}" ${extra}/>`;
+const faceL = (x, y, z, txt, size, fill, weight = 800) => { const [sx, sy] = P(x, y, z); return `<text transform="matrix(0.866,0.5,0,1,${sx},${sy})" font-size="${size}" font-weight="${weight}" fill="${fill}" letter-spacing="2">${txt}</text>`; };
+const faceR = (x, y, z, txt, size, fill, weight = 800) => { const [sx, sy] = P(x, y, z); return `<text transform="matrix(0.866,-0.5,0,1,${sx},${sy})" font-size="${size}" font-weight="${weight}" fill="${fill}" letter-spacing="2">${txt}</text>`; };
+
+const COLORS = { Book: '#dda466', DVD: '#7480f5', Magazine: '#f07a97' };
+const grid = (x0, y0, cols, rows, dx, dy) => { const a = []; for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) a.push([x0 + c * dx, y0 + r * dy]); return a; };
+const ZONES = {
+  Book: { slots: grid(1.25, 11.2, 4, 4, 1.6, 1.7), pallet: '#c9a27a' },
+  DVD: { slots: grid(18.85, 1.7, 3, 3, 1.5, 2.0), pallet: '#b8bdf2' },
+  Magazine: { slots: grid(18.85, 11.3, 3, 3, 1.5, 1.75), pallet: '#f0b3c1' }
+};
+const memberWorld = i => [9.9 + (i % 3) * 2.7, 15.1 + Math.floor(i / 3) * 2.6];
+const PIN = 'M0 0 C-3 -7 -15 -14 -15 -26 A15 15 0 1 1 15 -26 C15 -14 3 -7 0 0Z';
+
+function tree(x, y, r = 15){
+  const [bx, by] = P(x, y, 0), [cx, cy] = P(x, y, 1.5);
+  return `<g><ellipse cx="${bx}" cy="${by}" rx="${r*.7}" ry="${r*.35}" fill="rgba(30,58,110,.12)"/>
+    <rect x="${bx-2}" y="${cy}" width="4" height="${by-cy}" fill="#a16207"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#treeG)"/><circle cx="${cx-r*.3}" cy="${cy-r*.35}" r="${r*.35}" fill="#bbf7d0" opacity=".45"/></g>`;
+}
+function labelPin(x, y, z, text, color){
+  const [sx, sy] = P(x, y, z), w = text.length * 6.4 + 22;
+  return `<g transform="translate(${sx},${sy})"><line x1="0" y1="0" x2="0" y2="-14" stroke="${color}" stroke-width="2"/>
+    <rect x="${-w/2}" y="-36" width="${w}" height="22" rx="11" fill="#fff" stroke="${color}" stroke-opacity=".35"/>
+    <circle cx="${-w/2+11}" cy="-25" r="4" fill="${color}"/>
+    <text x="${-w/2+20}" y="-21" font-size="11" font-weight="700" fill="#0f172a">${esc(text)}</text></g>`;
+}
+
+function buildStatic(){
+  let g = box(0, 0, -0.7, 24, 24, 0.7, '#f7f9fd');
+  // roads
+  g += flat(0, 9, 24, 1.3, '#dde4ee') + flat(7.2, 0, 1.2, 9, '#dde4ee') + flat(16.9, 10.3, 1.2, 13.7, '#dde4ee');
+  g += `<line x1="${P(0,9.65)[0]}" y1="${P(0,9.65)[1]}" x2="${P(24,9.65)[0]}" y2="${P(24,9.65)[1]}" stroke="#fff" stroke-width="2" stroke-dasharray="10 9"/>`;
+  // zone pads
+  g += flat(0.8, 10.8, 6.7, 7.5, '#fbeedd', 0, 'stroke="#f0d7b6"') + flat(18.4, 1.2, 5, 6.8, '#e7e9fe', 0, 'stroke="#cfd3fb"')
+     + flat(18.4, 10.9, 5, 5.8, '#fde6ec', 0, 'stroke="#f7c9d5"') + flat(8.8, 13.6, 8, 9.6, '#e3ecfb', 0, 'stroke="#c9d8f5"');
+  // pallets
+  for (const [t, z] of Object.entries(ZONES)) z.slots.forEach(([x, y]) => g += box(x - 0.05, y - 0.05, 0, 1.05, 1.05, 0.12, z.pallet));
+  // database cylinder
+  const [dx, dy] = P(3.6, 4.4, 0), H = 64;
+  g += `<g class="db" id="db"><ellipse cx="${dx}" cy="${dy}" rx="44" ry="22" fill="rgba(30,58,110,.12)"/>
+    <ellipse class="dbring" cx="${dx}" cy="${dy-H}" rx="36" ry="18" fill="none" stroke="#2563eb" stroke-width="3"/>
+    <path d="M${dx-36} ${dy-H} v${H} a36 18 0 0 0 72 0 v${-H}z" fill="url(#dbG)" stroke="#94a3b8"/>
+    <path d="M${dx-36} ${dy-H+22} a36 18 0 0 0 72 0 M${dx-36} ${dy-H+44} a36 18 0 0 0 72 0" fill="none" stroke="#2563eb" stroke-width="3" opacity=".8"/>
+    <ellipse cx="${dx}" cy="${dy-H}" rx="36" ry="18" fill="#f8fafc" stroke="#94a3b8"/>
+    <text x="${dx}" y="${dy-H+5}" text-anchor="middle" font-size="11" font-weight="800" fill="#1d4ed8">SQLite</text></g>`;
+  g += `<path d="M${P(4.6,5.8)[0]} ${P(4.6,5.8)[1]} L${P(8.2,5.8)[0]} ${P(8.2,5.8)[1]}" stroke="#93b4f8" stroke-width="2" stroke-dasharray="3 5"/>`;
+  // building + wing
+  g += box(16, 2.6, 0, 2, 4.6, 2.3, '#3d7cf6');
+  g += box(8.6, 1.4, 0, 7.4, 6.6, 3.4, '#2f6bf0') + box(8.45, 1.25, 3.4, 7.7, 6.9, 0.22, '#1e4fd6');
+  g += box(10, 2.5, 3.62, 1.2, 1, 0.5, '#e2e8f0') + box(14, 2.6, 3.62, 1.1, 0.9, 0.4, '#e2e8f0');
+  g += flat(11.6, 3.6, 2.6, 2.6, '#ffffff', 3.63, 'stroke="#bfd2fb" stroke-width="2"') + flat(12.2, 4.2, 1.4, 1.4, '#2563eb', 3.64);
+  [[9.3, 10.7], [11.3, 12.7], [13.3, 14.7]].forEach(([a, b]) => {
+    g += `<polygon points="${pts([[a,8.01,0],[b,8.01,0],[b,8.01,2],[a,8.01,2]])}" fill="#1b3f9f"/>`;
+    for (let z = 0.3; z < 2; z += 0.35) g += `<polyline points="${pts([[a,8.02,z],[b,8.02,z]])}" stroke="#3567d8" stroke-width="1.2" fill="none"/>`;
+  });
+  g += faceL(9.3, 8, 2.45, 'MAIN LIBRARY', 13, '#ffffff');
+  g += faceR(16, 7.6, 2.75, 'LMS', 17, '#ffffff');
+  g += faceR(18, 6.7, 1.2, 'RETURNS', 10, '#dbe7ff', 700);
+  // desk
+  g += box(10.2, 11.2, 0, 4.6, 1.1, 0.95, '#ffffff') + flat(10.2, 11.2, 4.6, 1.1, '#2563eb', 0.96, 'opacity=".9"');
+  g += faceL(10.5, 12.3, 0.25, 'CIRCULATION', 8, '#2563eb', 700);
+  // trees
+  [[0.9, 1.2], [0.8, 7.4, 12], [6.3, 0.7, 12], [23.2, 18.5], [19.5, 20.5, 13], [23, 22.8, 12], [3.5, 22.3], [1.2, 20], [7.6, 21.3, 12], [12.5, 0.4, 11]]
+    .forEach(([x, y, r]) => g += tree(x, y, r));
+  document.getElementById('ground').innerHTML = g;
+  // van (used by the import worker)
+  document.getElementById('fx').innerHTML = `<g id="van" style="transform:translate(${P(-6,9.2,0)[0]}px,${P(-6,9.2,0)[1]}px)">
+    ${box(0, 0, 0, 2.4, 1, 1.2, '#ffffff')}${box(2.4, 0.05, 0, 0.8, 0.9, 0.85, '#2563eb')}
+    ${faceL(0.2, 1, 0.45, 'IMPORT', 9, '#2563eb', 800)}</g>`;
+  document.getElementById('labels').innerHTML = labelPin(4.2, 10.8, 1.6, 'Books · Reservable', '#c27a34') + labelPin(20.9, 1.2, 1.6, 'DVDs', '#5b63e6')
+    + labelPin(20.9, 10.9, 1.6, 'Magazines', '#d9466d') + labelPin(3.6, 4.4, 3.6, 'lms.db', '#2563eb') + labelPin(12.3, 4.7, 4.3, 'Library · Repository<T>', '#1d4ed8');
+}
+
+function itemShape(type){
+  const c = COLORS[type];
+  let deco = '';
+  if (type === 'Book') deco = `<polygon points="${pts([[0.4,0,0.56],[0.55,0,0.56],[0.55,0.95,0.56],[0.4,0.95,0.56]])}" fill="${shade(c,-0.25)}" opacity=".7"/>`;
+  if (type === 'DVD') { const [x, y] = P(0.47, 0.47, 0.56); deco = `<ellipse cx="${x}" cy="${y}" rx="8" ry="4.5" fill="#fff" opacity=".85"/><ellipse cx="${x}" cy="${y}" rx="2.2" ry="1.3" fill="${c}"/>`; }
+  if (type === 'Magazine') deco = `<polyline points="${pts([[0.2,0.25,0.56],[0.75,0.25,0.56]])}" stroke="#fff" stroke-width="1.6"/><polyline points="${pts([[0.2,0.5,0.56],[0.75,0.5,0.56]])}" stroke="#fff" stroke-width="1.6"/>`;
+  const [px, py] = P(0.47, 0.47, 0.6), [fx, fy] = P(0.8, 0.2, 0.55), [ox, oy] = P(0.47, 0.47, 0);
+  return `<g class="od"><circle cx="${ox}" cy="${oy}" r="18" fill="none" stroke="#dc2626" stroke-width="3"/></g>
+    <g class="shape">${box(0, 0, 0, 0.95, 0.95, 0.55, c)}${deco}</g>
+    <g class="flag"><line x1="${fx}" y1="${fy}" x2="${fx}" y2="${fy-18}" stroke="#92400e" stroke-width="1.6"/><path d="M${fx} ${fy-18} l11 4 -11 4z" fill="#f59e0b"/></g>
+    <g class="selpin" transform="translate(${px},${py-4})"><path d="${PIN}" transform="scale(.8)" fill="#2563eb" stroke="#fff" stroke-width="2"/><circle cx="0" cy="-21" r="5" fill="#fff"/></g>`;
+}
+
+const itemEls = new Map(), memEls = new Map();
+let reorderTimer;
+function setTf(el, x, y, s = 1){ el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) scale(${s})`; }
+
+function renderScene(opts = {}){
+  const dyn = document.getElementById('dyn');
+  const items = library.getItems(), members = library.getMembers();
+  const mpos = new Map(members.map((m, i) => [m.getMemberId(), memberWorld(i)]));
+  const typeIdx = { Book: 0, DVD: 0, Magazine: 0 }, held = new Map();
+  const match = STATE.searchQ.trim() ? new Set(library.search(STATE.searchQ).map(i => i.getId())) : null;
+  let ghosts = ''; const live = new Set();
+  for (const it of items){
+    const type = it.constructor.name, z = ZONES[type], idx = typeIdx[type]++;
+    const slot = z.slots[idx % z.slots.length], layer = Math.floor(idx / z.slots.length);
+    let wx, wy, wz, sc = 1;
+    if (it.isBorrowed()){
+      if (layer === 0) ghosts += flat(slot[0], slot[1], 0.95, 0.95, 'none', 0.13, 'stroke="#94a3b8" stroke-dasharray="3 3" stroke-width="1.2"');
+      const mid = it.getBorrower().getMemberId(), mp = mpos.get(mid), k = held.get(mid) || 0; held.set(mid, k + 1);
+      wx = mp[0] + 0.25 + (k % 2) * 0.05; wy = mp[1] - 1.15; wz = k * 0.34; sc = 0.6;
+    } else { wx = slot[0]; wy = slot[1]; wz = 0.12 + layer * 0.58; }
+    const id = it.getId(); live.add(id);
+    let g = itemEls.get(id);
+    const [sx, sy] = P(wx, wy, wz);
+    if (!g){
+      g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.classList.add('it'); g.dataset.id = id; g.innerHTML = itemShape(type);
+      g.addEventListener('click', e => { if (!dragMoved) select('item', id); });
+      dyn.appendChild(g); itemEls.set(id, g);
+      if (opts.spawnFrom){ g.style.transition = 'none'; setTf(g, ...opts.spawnFrom, 0.6); g.getBoundingClientRect(); g.style.transition = ''; }
+    }
+    setTf(g, sx, sy, sc);
+    g.dataset.depth = wx + wy + wz * 0.1;
+    const lo = LoanDAO.openLoan(id);
+    g.classList.toggle('sel', STATE.sel?.kind === 'item' && STATE.sel.id === id);
+    g.classList.toggle('reserved', isReservable(it) && it.isReserved());
+    g.classList.toggle('overdue', !!lo && STATE.today - lo.borrowedAt > LibraryController.loanDays());
+    g.classList.toggle('dim', !!match && !match.has(id));
+  }
+  document.getElementById('ghosts').innerHTML = ghosts;
+  members.forEach((m, i) => {
+    const id = m.getMemberId(), [mx, my] = memberWorld(i); live.add('m:' + id);
+    let g = memEls.get(id);
+    if (!g){
+      g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.classList.add('mem');
+      g.addEventListener('click', () => { if (!dragMoved) select('member', id); });
+      dyn.appendChild(g); memEls.set(id, g);
+    }
+    const [sx, sy] = P(mx, my, 0); setTf(g, sx, sy); g.dataset.depth = mx + my + 0.3;
+    const staff = m instanceof Staff, col = staff ? '#f59e0b' : '#2563eb';
+    const full = m.getBorrowedCount() >= m.getMaxBorrowLimit();
+    const ini = m.getName().split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
+    const nm = esc(m.getName()), nw = m.getName().length * 6.3 + 20, badge = `${m.getBorrowedCount()}/${m.getMaxBorrowLimit()}`;
+    g.innerHTML = `<ellipse cx="0" cy="0" rx="14" ry="7" fill="rgba(30,58,110,.18)"/>
+      <g class="pinbody"><path d="${PIN}" fill="${col}" stroke="#fff" stroke-width="2.5"/><text x="0" y="-21.5" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">${esc(ini)}</text></g>
+      <g transform="translate(0,13)"><rect x="-15" y="-8" width="30" height="16" rx="8" fill="${full ? '#fee2e2' : '#fff'}" stroke="${full ? '#fca5a5' : '#dbe3ef'}"/>
+      <text x="0" y="4" text-anchor="middle" font-size="10" font-weight="700" fill="${full ? '#dc2626' : '#334155'}">${badge}</text></g>
+      <g class="mname" transform="translate(0,-54)"><rect x="${-nw/2}" y="-11" width="${nw}" height="22" rx="11" fill="#0f172a"/><text x="0" y="4" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">${nm}</text></g>`;
+    g.classList.toggle('sel', STATE.sel?.kind === 'member' && STATE.sel.id === id);
+    g.classList.toggle('dim', !!match);
+  });
+  for (const [id, g] of itemEls) if (!live.has(id)){ g.remove(); itemEls.delete(id); }
+  clearTimeout(reorderTimer);
+  reorderTimer = setTimeout(() => [...dyn.children].sort((a, b) => a.dataset.depth - b.dataset.depth).forEach(n => dyn.appendChild(n)), 800);
+}
+
+function flowLine(fromW, toW){
+  const [x1, y1] = P(...fromW, 0.6), [x2, y2] = P(...toW, 1.2);
+  const mx = (x1 + x2) / 2, my = Math.min(y1, y2) - 70;
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('d', `M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`); p.setAttribute('class', 'flow');
+  document.getElementById('fx').appendChild(p); setTimeout(() => p.remove(), 1300);
+}
+function pulseDb(){ const d = document.getElementById('db'); if (!d) return; d.classList.remove('pulse'); void d.getBoundingClientRect(); d.classList.add('pulse'); }
+function worldOfItem(id){
+  const items = library.getItems(); const it = items.find(i => i.getId() === id); const t = it.constructor.name;
+  const idx = items.filter(i => i.constructor.name === t).indexOf(it); return ZONES[t].slots[idx % ZONES[t].slots.length];
+}
+const worldOfMember = id => memberWorld(library.getMembers().findIndex(m => m.getMemberId() === id));
+
+/* ---- pan & zoom ---- */
+const svg = document.getElementById('scene'), world = document.getElementById('world');
+const view = { k: 1, tx: 0, ty: 0 };
+const applyView = () => world.setAttribute('transform', `translate(${view.tx},${view.ty}) scale(${view.k})`);
+function fit(){
+  const r = svg.getBoundingClientRect(), mobile = innerWidth <= 1180;
+  const f = mobile ? { l: 0, t: 10, r: r.width, b: r.height } : { l: 70, t: 120, r: r.width - 392, b: r.height - 240 };
+  const bw = 1150, bh = 720;
+  view.k = Math.max(0.3, Math.min(1.5, Math.min((f.r - f.l) / bw, (f.b - f.t) / bh)));
+  view.tx = (f.l + f.r) / 2; view.ty = (f.t + f.b) / 2 - 250 * view.k; applyView();
+}
+function zoom(by){
+  const r = svg.getBoundingClientRect(), cx = r.width / 2 - 150, cy = r.height / 2;
+  const k2 = Math.max(0.3, Math.min(2.6, view.k * by)); const s = k2 / view.k;
+  view.tx = cx - (cx - view.tx) * s; view.ty = cy - (cy - view.ty) * s; view.k = k2; applyView();
+}
+let drag = null, dragMoved = false;
+svg.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty }; dragMoved = false; });
+addEventListener('pointermove', e => {
+  if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!dragMoved && Math.hypot(dx, dy) > 4){ dragMoved = true; svg.classList.add('dragging'); }
+  if (dragMoved){ view.tx = drag.tx + dx; view.ty = drag.ty + dy; applyView(); }
+});
+addEventListener('pointerup', () => { drag = null; svg.classList.remove('dragging'); setTimeout(() => dragMoved = false, 0); });
+document.getElementById('zIn').onclick = () => zoom(1.2);
+document.getElementById('zOut').onclick = () => zoom(1 / 1.2);
+document.getElementById('zFit').onclick = fit;
+addEventListener('resize', fit);
+
+/* =====================================================================
+   4. THE VIEW: run an operation, record its trace, play it back
+   ===================================================================== */
+const LAYERS = [
+  { k: 'view', n: 'View', s: 'MainFrame', c: 'var(--l-view)' },
+  { k: 'controller', n: 'Controller', s: 'LibraryController', c: 'var(--l-ctrl)' },
+  { k: 'model', n: 'Model', s: 'Library · LibraryItem', c: 'var(--l-model)' },
+  { k: 'dao', n: 'DAO', s: 'JDBC · PreparedStatement', c: 'var(--l-dao)' },
+  { k: 'db', n: 'Database', s: 'lms.db (SQLite)', c: 'var(--l-db)' }];
+let LAST_OP = null, stepTimers = [];
+
+function runOp(title, call, concepts, fn){
+  TRACE = []; T('view', call);
+  let result, error;
+  try { result = fn(); } catch (e){ error = e; }
+  if (error){
+    T('view', `catch (${error.name} e) → JOptionPane.showMessageDialog(...)`);
+    toast('err', error.name, error.message);
+  }
+  LAST_OP = { id: ++STATE.opSeq, title, call, concepts, trace: TRACE.slice(), error };
+  renderTracker(true); renderAll();
+  return { result, error };
+}
+
+function renderTracker(animate){
+  const op = LAST_OP, el = document.getElementById('tracker');
+  if (!op){ el.innerHTML = ''; return; }
+  const err = op.error;
+  // where was it thrown? A DataAccessException starts in the DAO even though the controller rethrows it after its rollback.
+  const errLayer = !err ? null : err instanceof DataAccessException ? 'dao' : [...op.trace].reverse().find(t => t.layer !== 'view')?.layer || 'view';
+  const visited = new Set(op.trace.map(t => t.layer));
+  const errIdx = err ? LAYERS.findIndex(l => l.k === errLayer) : -1;
+  const status = LAYERS.map((l, i) => i === errIdx ? 'error' : visited.has(l.k) ? 'done' : 'skip');
+  const firstText = k => op.trace.find(t => t.layer === k)?.text || 'not used by this call';
+  el.innerHTML = `<div class="tr-head"><div style="min-width:0"><div class="tr-title">Operation trace <span class="tag">#OP-${String(op.id).padStart(4, '0')}</span></div>
+      <div class="tr-call" title="${esc(op.call)}">${esc(op.call)}</div></div>
+      <div class="chips" style="justify-content:flex-end">${op.concepts.map(c => `<span class="chip violet">${esc(c)}</span>`).join('')}</div></div>
+    <div class="steps">${LAYERS.map((l, i) => `<div class="step ${animate ? 'pending' : status[i]}" data-i="${i}" title="${esc(firstText(l.k))}">
+      <div class="dot">${status[i] === 'error' ? '!' : status[i] === 'skip' ? '–' : '✓'}</div><div class="lbl">${l.n}</div><div class="sub">${l.s}</div></div>`).join('')}</div>
+    <div class="tr-body"><ol class="log">${op.trace.map((t, i) => {
+      const L = LAYERS.find(l => l.k === t.layer); const bad = err && i === op.trace.length - 2;
+      return `<li class="${bad ? 'err' : ''}" style="animation-delay:${animate ? i * 90 : 0}ms"><span class="ly" style="color:${L.c}">${L.n}</span><span class="tx" title="${esc(t.text)}">${esc(t.text)}</span></li>`; }).join('')}
+      ${err ? `<li class="err" style="animation-delay:${animate ? op.trace.length * 90 : 0}ms"><span class="ly" style="color:var(--red)">throw</span><span class="tx">${esc(err.name)}: ${esc(err.message)}</span></li>` : ''}</ol>
+      <div class="result ${err ? 'err' : 'ok'}"><div class="r-k">${err ? (err.kind === 'checked' ? 'Checked exception' : 'Unchecked exception') : 'Result'}</div>
+      <div class="r-h">${err ? esc(err.name) : 'Success'}</div><div class="r-m">${err ? esc(err.message) : esc(op.okMsg || 'Completed without exceptions.')}</div></div></div>`;
+  stepTimers.forEach(clearTimeout); stepTimers = [];
+  if (animate) [...el.querySelectorAll('.step')].forEach((s, i) => {
+    stepTimers.push(setTimeout(() => { s.className = 'step active'; }, i * 230));
+    stepTimers.push(setTimeout(() => { s.className = 'step ' + status[i]; }, i * 230 + 200));
+  });
+}
+
+/* ---- operations (what the Swing buttons do) ---- */
+function doBorrow(itemId, memberId){
+  const it = library.getItems().find(i => i.getId() === itemId);
+  const from = it && !it.isBorrowed() ? worldOfItem(itemId) : null;
+  const { error } = runOp('Borrow', `borrowButton → controller.borrow("${itemId}", "${memberId}")`, ['Interfaces · Loanable', 'Exceptions', 'MVC', 'JDBC'],
+    () => controller.borrow(itemId, memberId));
+  if (!error){
+    LAST_OP.okMsg = `${it.getTitle()} is now on loan to ${it.getBorrower().getName()}.`; renderTracker(false);
+    toast('ok', 'Borrowed', LAST_OP.okMsg);
+    if (from) flowLine(from, worldOfMember(memberId));
+  }
+}
+function doReturn(itemId){
+  const it = library.getItems().find(i => i.getId() === itemId);
+  const mid = it?.getBorrower()?.getMemberId(), lo = LoanDAO.openLoan(itemId);
+  let fee = 0, late = 0;
+  const { error } = runOp('Return', `returnButton → controller.giveBack("${itemId}")`, ['Polymorphism', 'Exceptions', 'JDBC'], () => {
+    controller.giveBack(itemId);
+    late = lo ? Math.max(0, STATE.today - lo.borrowedAt - LibraryController.loanDays()) : 0;
+    fee = it.calculateLateFee(late);
+    T('model', `item.calculateLateFee(${late}) → ${it.constructor.name}.calculateLateFee → ${fee.toFixed(1)}  // dynamic dispatch`);
+  });
+  if (!error){
+    LAST_OP.okMsg = late ? `Returned ${late} day(s) late. Late fee = ${fee.toFixed(1)}` : `${it.getTitle()} is back on the shelf. No late fee.`;
+    renderTracker(false);
+    toast(late ? 'warn' : 'ok', late ? 'Returned late' : 'Returned', LAST_OP.okMsg);
+    if (mid) flowLine(worldOfMember(mid), worldOfItem(itemId));
+  }
+}
+function doReserve(itemId, memberId, cancel){
+  let r;
+  const { error } = runOp(cancel ? 'Cancel reservation' : 'Reserve', cancel ? `((Reservable) item).cancelReservation()` : `library.reserveIfPossible(item, ${memberId})`,
+    ['Interfaces · Reservable', 'instanceof'], () => {
+      const item = library.findItem(itemId);
+      if (cancel){ T('model', `Book.cancelReservation()`); r = item.cancelReservation(); return; }
+      r = library.reserveIfPossible(item, library.findMember(memberId));
+      T('model', r.msg);
+    });
+  if (!error){ LAST_OP.okMsg = r.msg; renderTracker(false); toast(r.ok ? 'ok' : 'warn', r.ok ? 'Reservable' : 'Not reservable', r.msg); renderAll(); }
+}
+
+/* =====================================================================
+   5. RENDERING THE PANELS
+   ===================================================================== */
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function clockStr(){ return new Date().toTimeString().slice(0, 8); }
+const ICONS = {
+  Book: '<path d="M4 19.5V5a2 2 0 0 1 2-2h14v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M8 7h8"/>',
+  DVD: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>',
+  Magazine: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  Student: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  Staff: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M12 14l1.5 3h-3z"/>' };
+const icon = (t, size = 16) => `<span class="ic ${t}"><svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[t]}</svg></span>`;
+const detailOf = i => i instanceof Book ? i.getAuthor() : i instanceof DVD ? `${i.getDurationMinutes()} min` : `Issue #${i.getIssueNumber()}`;
+function statusOf(i){
+  const lo = LoanDAO.openLoan(i.getId());
+  if (lo && STATE.today - lo.borrowedAt > LibraryController.loanDays()) return ['red', 'Overdue'];
+  if (i.isBorrowed()) return ['blue', 'On loan'];
+  if (isReservable(i) && i.isReserved()) return ['amber', 'Reserved'];
+  return ['green', 'On shelf'];
+}
+
+function renderHeader(){
+  const items = library.getItems(), av = items.filter(i => !i.isBorrowed()).length;
+  document.getElementById('dayNum').textContent = STATE.today;
+  document.getElementById('hubSub').textContent = `lms.db · ${Math.round(av / Math.max(1, items.length) * 100)}% on shelf`;
+}
+
+function renderKPIs(flashIdx){
+  const items = library.getItems(), mem = library.getMembers(), loaned = items.filter(i => i.isBorrowed()).length;
+  const staff = mem.filter(m => m instanceof Staff).length;
+  const k = (bg, col, svgp, lbl, val, extra, sub) => `<div class="kpi panel"><div class="k-ic" style="background:${bg};color:${col}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${svgp}</svg></div>
+    <div><div class="k-lbl">${lbl}</div><div class="k-val">${val}${extra}</div><div class="k-sub">${sub}</div></div></div>`;
+  document.getElementById('kpis').innerHTML =
+    k('#fdf0e1', '#c27a34', ICONS.Book, 'Items in catalogue', items.length, STATE.added ? `<span class="delta">+${STATE.added}</span>` : '', 'Repository&lt;LibraryItem&gt;') +
+    k('#eef4ff', '#2563eb', '<path d="M3 7h13l5 5v5h-3"/><path d="M3 7v10h3"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/>', 'On loan', loaned, `<span style="font-size:12px;color:var(--muted);font-weight:500">/ ${items.length}</span>`, `${items.length - loaned} available on shelves`) +
+    k('#ede9fe', '#7c3aed', ICONS.Student, 'Members', mem.length, '', `${mem.length - staff} Student · ${staff} Staff`) +
+    k(STATE.overdue ? '#fee2e2' : '#dcfce7', STATE.overdue ? '#dc2626' : '#15803d', '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', `Overdue (&gt;${LibraryController.loanDays()} days)`, STATE.overdue,
+      STATE.overdue ? '<span class="delta red">action</span>' : '<span class="delta">clear</span>', STATE.checkerOn ? `OverdueChecker · ${STATE.lastCheck ? STATE.lastCheck.toTimeString().slice(0, 8) : '…'}` : 'checker interrupted');
+  if (flashIdx != null) document.querySelectorAll('.kpi')[flashIdx]?.classList.add('flash');
+}
+
+function renderInspector(){
+  const el = document.getElementById('inspector');
+  const sel = STATE.sel;
+  if (sel?.kind === 'item' && library.hasItem(sel.id)) return el.innerHTML = itemInspector(library.getItems().find(i => i.getId() === sel.id)), bindInspector();
+  if (sel?.kind === 'member' && library.hasMember(sel.id)) return el.innerHTML = memberInspector(library.getMembers().find(m => m.getMemberId() === sel.id)), bindInspector();
+  STATE.sel = null;
+  const items = library.getItems(), av = items.filter(i => !i.isBorrowed()).length;
+  const res = items.filter(i => isReservable(i) && i.isReserved()).length;
+  const atLimit = library.getMembers().filter(m => m.getBorrowedCount() >= m.getMaxBorrowLimit()).length;
+  const counts = { All: items.length, Book: 0, DVD: 0, Magazine: 0 }; items.forEach(i => counts[i.constructor.name]++);
+  const list = items.filter(i => STATE.catFilter === 'All' || i.constructor.name === STATE.catFilter);
+  el.innerHTML = `<div class="eyebrow">Branch · lms.db</div>
+    <div class="ins-title">Main Library</div><div class="ins-sub">Reference solution · Java 21 · Swing · SQLite</div>
+    <div class="chips" style="margin-top:10px"><span class="chip green">● Operational</span><span class="chip blue">${items.length - av} on loan</span><span class="chip">${av} available</span>${res ? `<span class="chip amber">${res} reserved</span>` : ''}</div>
+    <div class="stats2"><div class="stat"><div class="s-l">On the shelves</div><div class="s-v">${av} <small>/ ${items.length}</small></div><div class="bar"><i style="width:${av / Math.max(1, items.length) * 100}%"></i></div></div>
+      <div class="stat"><div class="s-l">Members at limit</div><div class="s-v">${atLimit} <small>/ ${library.getMembers().length}</small></div><div class="bar"><i style="width:${atLimit / Math.max(1, library.getMembers().length) * 100}%;background:var(--red)"></i></div></div></div>
+    <div class="sec-h"><b>Catalogue</b><div class="seg" id="catSeg">${['All', 'Book', 'DVD', 'Magazine'].map(t => `<button data-f="${t}" class="${STATE.catFilter === t ? 'on' : ''}">${t === 'Magazine' ? 'Mag' : t} ${counts[t]}</button>`).join('')}</div></div>
+    <div class="rows">${list.map(i => { const [c, s] = statusOf(i); return `<div class="row" data-item="${esc(i.getId())}">${icon(i.constructor.name)}
+      <div class="r-main"><div class="r-t">${esc(i.getTitle())}</div><div class="r-s">${esc(i.getId())} · ${esc(detailOf(i))}</div></div><span class="chip ${c}">${s}</span></div>`; }).join('')}</div>
+    <p class="note">Each row is a <code>LibraryItem</code>. The list comes from <code>library.getItems()</code>, which copies the values of a <code>LinkedHashMap</code> so they stay in insertion order.</p>`;
+  el.querySelectorAll('#catSeg button').forEach(b => b.onclick = () => { STATE.catFilter = b.dataset.f; renderInspector(); });
+  el.querySelectorAll('[data-item]').forEach(r => {
+    r.onclick = () => select('item', r.dataset.item);
+    r.onmouseenter = () => itemEls.get(r.dataset.item)?.classList.add('hl');
+    r.onmouseleave = () => itemEls.get(r.dataset.item)?.classList.remove('hl');
+  });
+}
+
+function classSig(i){
+  const t = i.constructor.name;
+  const extra = t === 'Book' ? ` <span class="kw">implements</span> <span class="ty">Reservable</span>` : '';
+  const fld = t === 'Book' ? `<span class="kw">private</span> <span class="ty">String</span> author;\n  <span class="kw">private</span> <span class="ty">Member</span> reservedBy;`
+    : t === 'DVD' ? `<span class="kw">private int</span> durationMinutes;` : `<span class="kw">private int</span> issueNumber;`;
+  const rate = { Book: 10, DVD: 25, Magazine: 5 }[t];
+  return `<span class="kw">public class</span> <span class="ty">${t}</span> <span class="kw">extends</span> <span class="ty">LibraryItem</span>${extra} {
+  ${fld}
+  <span class="cm">@Override</span>
+  <span class="kw">public double</span> calculateLateFee(<span class="kw">int</span> d) {
+    <span class="kw">return</span> d * <span class="nu">${rate}.0</span>;
+  }
+}`;
+}
+
+function itemInspector(i){
+  const t = i.constructor.name, [c, s] = statusOf(i), lo = LoanDAO.openLoan(i.getId());
+  const fields = [['id', i.getId()], ['title', i.getTitle()]];
+  if (i instanceof Book) fields.push(['author', i.getAuthor()]);
+  if (i instanceof DVD) fields.push(['durationMinutes', i.getDurationMinutes()]);
+  if (i instanceof Magazine) fields.push(['issueNumber', i.getIssueNumber()]);
+  fields.push(['isBorrowed', i.isBorrowed()], ['borrower', i.getBorrower() ? i.getBorrower().getName() : 'null']);
+  if (i instanceof Book) fields.push(['reservedBy', i.getReservedBy() ? i.getReservedBy().getName() : 'null']);
+  const members = library.getMembers();
+  const memOpts = members.map(m => `<option value="${esc(m.getMemberId())}">${esc(m.getName())} (${m.constructor.name} ${m.getBorrowedCount()}/${m.getMaxBorrowLimit()})</option>`).join('')
+    + `<option value="X999">X999 (unknown id)</option>`;
+  const out = lo ? STATE.today - lo.borrowedAt : 0;
+  return `<a href="#" class="linkback" id="back">← Catalogue</a>
+    <div style="display:flex;gap:12px;align-items:center">${icon(t, 20).replace('class="ic', 'style="width:44px;height:44px;border-radius:12px" class="ic')}
+      <div style="min-width:0"><div class="eyebrow">${t} · ${esc(i.getId())}</div><div class="ins-title" style="font-size:16px">${esc(i.getTitle())}</div><div class="ins-sub">${esc(detailOf(i))}</div></div></div>
+    <div class="chips" style="margin-top:10px"><span class="chip ${c}">${s}</span><span class="chip">LibraryItem</span><span class="chip">Loanable</span>${isReservable(i) ? '<span class="chip amber">Reservable</span>' : ''}</div>
+    <div class="sig">${classSig(i)}</div>
+    <div class="sec-h"><b>Private fields</b><span class="chip">🔒 encapsulated</span></div>
+    <div class="fields">${fields.map(([k, v]) => `<div><span>${k}</span><span>${esc(v)}</span></div>`).join('')}</div>
+    <p class="note">The page reads these through getters like <code>getTitle()</code>. The setters reject blank values with <code>IllegalArgumentException</code>.</p>
+    <div class="sec-h"><b>Loan</b>${lo ? `<span class="chip ${out > 14 ? 'red' : 'blue'}">${out} day(s) out</span>` : ''}</div>
+    ${i.isBorrowed() ? `<div class="ins-sub">Borrowed by <b style="color:var(--ink)">${esc(i.getBorrower().getName())}</b> on day ${lo?.borrowedAt}.</div>
+      <div class="act"><button class="btn sm primary" id="aReturn">Return item</button><select id="aMem">${memOpts}</select><button class="btn sm" id="aBorrow" title="Try it: this throws">Borrow</button></div>`
+    : `<div class="act"><select id="aMem">${memOpts}</select><button class="btn sm primary" id="aBorrow">Borrow</button></div>
+       <div class="act"><button class="btn sm" id="aReturn" title="Try it: this throws">Return (not on loan)</button></div>`}
+    <div class="act">${isReservable(i) && i.isReserved() ? `<button class="btn sm" id="aCancel">Cancel reservation</button>` : ''}<button class="btn sm" id="aReserve">Reserve for selected member</button></div>
+    <div class="sec-h"><b>Late fee · polymorphism</b><span class="chip violet" id="feeDaysLbl">${STATE.feeDays} day(s) late</span></div>
+    <input type="range" min="0" max="30" value="${STATE.feeDays}" id="feeRange"/>
+    <div id="feeBox">${feeRows(t)}</div>
+    <p class="note">The same call, <code>item.calculateLateFee(d)</code>, runs a different method body for each subclass. Java picks the body at runtime from the object's real class (dynamic dispatch).</p>`;
+}
+function feeRows(cur){
+  const d = STATE.feeDays, rates = { Book: 10, DVD: 25, Magazine: 5 }, max = 30 * 25;
+  return Object.entries(rates).map(([t, r]) => `<div class="fee-row ${t === cur ? 'me' : ''}"><span>${t}</span><div class="bar"><i style="width:${d * r / max * 100}%;background:${t === 'Book' ? 'var(--book)' : t === 'DVD' ? 'var(--dvd)' : 'var(--mag)'}"></i></div><span class="mono">${(d * r).toFixed(1)}</span></div>`).join('');
+}
+
+function memberInspector(m){
+  const t = m.constructor.name, items = library.getItems().filter(i => i.getBorrower() === m);
+  const lim = t === 'Staff' ? 'STAFF_BORROW_LIMIT' : 'STUDENT_BORROW_LIMIT';
+  const pct = m.getBorrowedCount() / m.getMaxBorrowLimit() * 100;
+  const opts = library.getItems().map(i => `<option value="${esc(i.getId())}">${esc(i.getId())} · ${esc(i.getTitle())}${i.isBorrowed() ? ' (on loan)' : ''}</option>`).join('') + `<option value="Z999">Z999 (no such item)</option>`;
+  return `<a href="#" class="linkback" id="back">← Catalogue</a>
+    <div style="display:flex;gap:12px;align-items:center">${icon(t, 20).replace('class="ic', 'style="width:44px;height:44px;border-radius:50%" class="ic')}
+      <div><div class="eyebrow">${t} · ${esc(m.getMemberId())}</div><div class="ins-title" style="font-size:16px">${esc(m.getName())}</div></div></div>
+    <div class="sig"><span class="kw">public class</span> <span class="ty">${t}</span> <span class="kw">extends</span> <span class="ty">Member</span> {
+  <span class="kw">private static final int</span> ${lim} = <span class="nu">${m.getMaxBorrowLimit()}</span>;
+  <span class="kw">public</span> ${t}(<span class="ty">String</span> id, <span class="ty">String</span> name) {
+    <span class="kw">super</span>(id, name, ${lim});
+  }
+}
+<span class="cm">// Member implements Comparable&lt;Member&gt;</span></div>
+    <div class="stat"><div class="s-l">borrowedCount / maxBorrowLimit</div><div class="s-v">${m.getBorrowedCount()} <small>/ ${m.getMaxBorrowLimit()}</small></div>
+      <div class="bar"><i style="width:${pct}%;background:${pct >= 100 ? 'var(--red)' : 'var(--blue)'}"></i></div></div>
+    <div class="sec-h"><b>Items held</b><span class="chip">${items.length}</span></div>
+    <div class="rows">${items.length ? items.map(i => { const lo = LoanDAO.openLoan(i.getId()), d = STATE.today - lo.borrowedAt; return `<div class="row" data-item="${esc(i.getId())}">${icon(i.constructor.name)}
+      <div class="r-main"><div class="r-t">${esc(i.getTitle())}</div><div class="r-s">${d} day(s) out${d > 14 ? ' · overdue' : ''}</div></div><button class="btn sm" data-ret="${esc(i.getId())}">Return</button></div>`; }).join('')
+      : '<div class="ins-sub" style="padding:6px 0">Nothing on loan.</div>'}</div>
+    <div class="sec-h"><b>Borrow for ${esc(m.getName().split(' ')[0])}</b></div>
+    <div class="act"><select id="aItem">${opts}</select><button class="btn sm primary" id="aBorrowM">Borrow</button></div>
+    <p class="note">Pick an item that is already on loan, or borrow past the limit of ${m.getMaxBorrowLimit()}, to see <code>ItemNotAvailableException</code>. The check is in <code>LibraryItem.loan()</code>.</p>`;
+}
+function bindInspector(){
+  const el = document.getElementById('inspector'), sel = STATE.sel;
+  el.querySelector('#back')?.addEventListener('click', e => { e.preventDefault(); select(null); });
+  el.querySelectorAll('[data-ret]').forEach(b => b.onclick = e => { e.stopPropagation(); doReturn(b.dataset.ret); });
+  el.querySelectorAll('.row[data-item]').forEach(r => r.onclick = () => select('item', r.dataset.item));
+  if (sel.kind === 'item'){
+    const mem = () => el.querySelector('#aMem')?.value;
+    el.querySelector('#aBorrow')?.addEventListener('click', () => doBorrow(sel.id, mem()));
+    el.querySelector('#aReturn')?.addEventListener('click', () => doReturn(sel.id));
+    el.querySelector('#aReserve')?.addEventListener('click', () => doReserve(sel.id, mem()));
+    el.querySelector('#aCancel')?.addEventListener('click', () => doReserve(sel.id, null, true));
+    const t = library.getItems().find(i => i.getId() === sel.id).constructor.name;
+    el.querySelector('#feeRange').oninput = e => { STATE.feeDays = +e.target.value; el.querySelector('#feeDaysLbl').textContent = `${STATE.feeDays} day(s) late`; el.querySelector('#feeBox').innerHTML = feeRows(t); };
+  } else {
+    el.querySelector('#aBorrowM').onclick = () => doBorrow(el.querySelector('#aItem').value, sel.id);
+  }
+}
+
+/* ---- dock ---- */
+function renderDock(){
+  const mem = library.getMembers(), open = DB.loans.filter(l => l.returnedAt == null);
+  const tabs = [['members', 'Members', mem.length], ['loans', 'Loans', open.length], ['threads', 'Threads', 3], ['sql', 'SQL log', '']];
+  document.getElementById('tabs').innerHTML = tabs.map(([k, n, c]) => `<button data-t="${k}" class="${STATE.tab === k ? 'on' : ''}">${n}${c !== '' ? ` <small>${c}</small>` : ''}</button>`).join('');
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { STATE.tab = b.dataset.t; renderDock(); });
+  const el = document.getElementById('dock');
+  const byName = id => library.getMembers().find(m => m.getMemberId() === id)?.getName() || id;
+  const titleOf = id => library.getItems().find(i => i.getId() === id)?.getTitle() || id;
+  if (STATE.tab === 'members'){
+    const list = STATE.sortByActivity ? library.membersByActivity() : mem;
+    el.innerHTML = `<div class="sec-h" style="margin-top:4px"><span class="ins-sub">Order</span><div class="seg" id="sortSeg"><button class="${!STATE.sortByActivity ? 'on' : ''}" data-s="0">Insertion</button><button class="${STATE.sortByActivity ? 'on' : ''}" data-s="1">compareTo()</button></div></div>
+      <div class="rows">${list.map(m => { const p = m.getBorrowedCount() / m.getMaxBorrowLimit() * 100; return `<div class="row" data-m="${esc(m.getMemberId())}">${icon(m.constructor.name)}
+        <div class="r-main"><div class="r-t">${esc(m.getName())}</div><div class="bar" style="margin-top:4px"><i style="width:${p}%;background:${p >= 100 ? 'var(--red)' : m instanceof Staff ? 'var(--staff)' : 'var(--blue)'}"></i></div></div>
+        <span class="mono" style="font-size:11.5px;color:var(--muted)">${m.getBorrowedCount()}/${m.getMaxBorrowLimit()}</span></div>`; }).join('')}</div>`;
+    el.querySelectorAll('#sortSeg button').forEach(b => b.onclick = () => {
+      STATE.sortByActivity = b.dataset.s === '1';
+      if (STATE.sortByActivity) runOp('Sort members', 'Collections.sort(members)', ['Comparable', 'Collections'], () => {
+        T('model', 'Collections.sort(list) → Member.compareTo(other)'); T('model', 'Integer.compare(other.borrowedCount, this.borrowedCount)  // most active first'); });
+      else renderDock();
+    });
+    el.querySelectorAll('[data-m]').forEach(r => r.onclick = () => select('member', r.dataset.m));
+  } else if (STATE.tab === 'loans'){
+    const hist = LoanDAO.history().filter(l => l.returnedAt != null);
+    el.innerHTML = `<table class="tbl"><tr><th>Item</th><th>Member</th><th>Out</th><th></th></tr>${open.map(l => { const d = STATE.today - l.borrowedAt; return `<tr><td title="${esc(titleOf(l.itemId))}">${esc(titleOf(l.itemId))}</td><td>${esc(byName(l.memberId))}</td><td>${d}d</td>
+      <td><span class="chip ${d > 14 ? 'red' : 'blue'}">${d > 14 ? 'Overdue' : 'Loaned'}</span></td></tr>`; }).join('') || '<tr><td colspan="4">No open loans</td></tr>'}</table>
+      <div class="sec-h"><b>History</b><span class="mono" style="font-size:10.5px;color:var(--muted)">loanDAO.history()</span></div>
+      <table class="tbl">${hist.map(l => `<tr><td>${esc(titleOf(l.itemId))}</td><td>${esc(byName(l.memberId))}</td><td>day ${l.borrowedAt}→${l.returnedAt}</td></tr>`).join('') || '<tr><td class="ins-sub">Return an item to see it here.</td></tr>'}</table>`;
+  } else if (STATE.tab === 'threads'){
+    const r = STATE.race;
+    el.innerHTML = `<div class="th"><span class="beat on"></span><div class="t-main"><b>AWT-EventQueue-0</b> <span class="chip blue">EDT</span><div class="t-s">Handles every click and repaint. Slow work must not run here.</div></div></div>
+      <div class="th"><span class="beat ${STATE.checkerOn ? 'on' : ''}" id="ocBeat"></span><div class="t-main"><b>overdue-checker</b> <span class="chip">daemon</span>
+        <div class="t-s">${STATE.checkerOn ? `Every 3 s: <code>countOverdue()</code> → <b>${STATE.overdue}</b> · ${STATE.lastCheck ? STATE.lastCheck.toTimeString().slice(0, 8) : '…'}` : 'Interrupted. The loop exits on the next check.'}</div></div>
+        <button class="btn sm" id="ocToggle">${STATE.checkerOn ? 'interrupt()' : 'start()'}</button></div>
+      <div class="th" style="flex-wrap:wrap"><span class="beat ${STATE.importing ? 'on' : ''}"></span><div class="t-main"><b>ImportWorker</b> <span class="chip">SwingWorker</span><div class="t-s">${esc(STATE.importMsg)}</div></div>
+        <button class="btn sm" id="impBtn" ${STATE.importing ? 'disabled' : ''}>execute()</button><div class="bar" style="flex-basis:100%;height:8px"><i style="width:${STATE.importPct}%"></i></div></div>
+      <div class="th" style="display:block"><div style="display:flex;justify-content:space-between;align-items:center"><div><b>RaceDemo</b><div class="t-s">2 threads × 1,000 × <code>count++</code> · expected 2,000</div></div>
+        <div style="display:flex;gap:4px"><button class="btn sm" id="raceU">unsafe</button><button class="btn sm" id="raceS">synchronized</button></div></div>
+        <div class="race"><div class="stat"><div class="s-l">Final count</div><div class="s-v" id="raceCount" style="color:${r?.done && !r.safe && r.count < 2000 ? 'var(--red)' : 'inherit'}">${r ? r.count : '—'}</div></div>
+        <div class="stat"><div class="s-l">Lost updates</div><div class="s-v" id="raceLost">${r ? r.lost : '—'}</div></div></div></div>`;
+    el.querySelector('#ocToggle').onclick = () => { STATE.checkerOn = !STATE.checkerOn; toast(STATE.checkerOn ? 'ok' : 'warn', STATE.checkerOn ? 'Thread started' : 'Thread interrupted', STATE.checkerOn ? 't.setDaemon(true); t.start();' : 'Thread.currentThread().isInterrupted() → loop ends'); renderDock(); renderKPIs(); };
+    el.querySelector('#impBtn').onclick = startImport;
+    el.querySelector('#raceU').onclick = () => runRace(false);
+    el.querySelector('#raceS').onclick = () => runRace(true);
+  } else {
+    el.innerHTML = `<label class="th" style="cursor:pointer"><input type="checkbox" id="failChk" ${DB.failNext ? 'checked' : ''}/><div class="t-main"><b>Simulate a DB failure</b><div class="t-s">The next write throws <code>DataAccessException</code>, so the controller rolls back the in-memory change.</div></div></label>
+      <div class="sql">${SQL_LOG.slice().reverse().map(s => `<div class="${s.thread.startsWith('overdue') ? 'bg' : ''}"><span class="th-n">${s.t} [${esc(s.thread)}]</span><br>${esc(s.sql)}</div>`).join('')}</div>`;
+    el.querySelector('#failChk').onchange = e => { DB.failNext = e.target.checked; };
+  }
+}
+
+function renderAll(){ renderHeader(); renderKPIs(); renderScene(); renderInspector(); renderDock(); }
+function select(kind, id){ STATE.sel = kind ? { kind, id } : null; renderScene(); renderInspector(); if (innerWidth <= 1180 && kind) document.querySelector('.inspector').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+
+/* ---- toasts & modals ---- */
+function toast(kind, title, msg){
+  const t = document.createElement('div'); t.className = 'toast ' + kind;
+  t.innerHTML = `<div class="t-ic">${kind === 'err' ? '!' : kind === 'warn' ? 'i' : '✓'}</div><div><b>${esc(title)}</b><span>${esc(msg)}</span></div>`;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(() => { t.style.transition = 'opacity .4s'; t.style.opacity = 0; setTimeout(() => t.remove(), 400); }, 4200);
+}
+const modal = document.getElementById('modal'), card = document.getElementById('modalCard');
+function openModal(html){ card.innerHTML = html; modal.classList.add('open'); card.querySelector('[data-close]')?.addEventListener('click', closeModal); }
+function closeModal(){ modal.classList.remove('open'); }
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+function nextId(prefix, exists){ let n = 1; while (exists(prefix + String(n).padStart(3, '0'))) n++; return prefix + String(n).padStart(3, '0'); }
+function openAddItem(){
+  let type = 'Book';
+  const pre = { Book: 'B', DVD: 'D', Magazine: 'M' }, lbl = { Book: 'Author', DVD: 'Duration (minutes)', Magazine: 'Issue number' };
+  openModal(`<h3>Add item</h3><div class="ins-sub">MainFrame → <code>controller.addItem(type, id, title, detail)</code></div>
+    <div class="form"><div class="seg" id="tSeg">${['Book', 'DVD', 'Magazine'].map(t => `<button data-t="${t}" class="${t === type ? 'on' : ''}" style="flex:1;padding:6px">${t}</button>`).join('')}</div>
+    <label>id<input id="fId"/></label><label>title<input id="fTitle" placeholder="e.g. Thinking in Java"/></label><label><span id="fDetailL">${lbl.Book}</span><input id="fDetail"/></label>
+    <div class="err-box" id="fErr"></div>
+    <p class="note">To see validation fail, leave a field blank, type letters into Duration, or reuse an id that exists.</p></div>
+    <div class="m-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="fOk">Add item</button></div>`);
+  const $ = s => card.querySelector(s);
+  const setType = t => { type = t; card.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $('#fDetailL').textContent = lbl[t]; $('#fId').value = nextId(pre[t], id => library.hasItem(id)); };
+  card.querySelectorAll('#tSeg button').forEach(b => b.onclick = () => setType(b.dataset.t));
+  setType('Book'); $('#fTitle').focus();
+  $('#fOk').onclick = () => {
+    const id = $('#fId').value.trim(), title = $('#fTitle').value.trim(), detail = $('#fDetail').value.trim();
+    const { error, result } = runOp('Add item', `addButton → controller.addItem("${type}", "${id}", "${title}", "${detail}")`, ['Encapsulation', 'Inheritance', 'JDBC'],
+      () => controller.addItem(type, id, title, detail));
+    if (error){ $('#fErr').textContent = `${error.name}: ${error.message}`; $('#fErr').classList.add('show'); return; }
+    STATE.added++; LAST_OP.okMsg = `${type} ${id} saved to lms.db, then added to the Repository.`; renderTracker(false);
+    closeModal(); toast('ok', 'Item added', LAST_OP.okMsg); select('item', result.getId()); renderKPIs(0);
+  };
+}
+function openAddMember(){
+  let type = 'Student';
+  openModal(`<h3>New member</h3><div class="ins-sub"><code>controller.addMember(type, id, name)</code></div>
+    <div class="form"><div class="seg" id="tSeg"><button data-t="Student" class="on" style="flex:1;padding:6px">Student · limit 3</button><button data-t="Staff" style="flex:1;padding:6px">Staff · limit 10</button></div>
+    <label>memberId<input id="fId"/></label><label>name<input id="fName" placeholder="e.g. Nethmi Wickramasinghe"/></label><div class="err-box" id="fErr"></div></div>
+    <div class="m-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="fOk">Create member</button></div>`);
+  const $ = s => card.querySelector(s);
+  const setType = t => { type = t; card.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $('#fId').value = nextId(t === 'Staff' ? 'T' : 'S', id => library.hasMember(id)); };
+  card.querySelectorAll('#tSeg button').forEach(b => b.onclick = () => setType(b.dataset.t));
+  setType('Student'); $('#fName').focus();
+  $('#fOk').onclick = () => {
+    const id = $('#fId').value.trim(), name = $('#fName').value.trim();
+    const { error, result } = runOp('New member', `newMemberButton → controller.addMember("${type}", "${id}", "${name}")`, ['Inheritance', 'super()', 'JDBC'], () => controller.addMember(type, id, name));
+    if (error){ $('#fErr').textContent = `${error.name}: ${error.message}`; $('#fErr').classList.add('show'); return; }
+    closeModal(); toast('ok', 'Member created', `${type} ${name} can borrow up to ${result.getMaxBorrowLimit()} items.`); select('member', id); renderKPIs(2);
+  };
+}
+function openReport(){
+  let counts, avail;
+  runOp('Loan report', 'reportButton → controller.loanReport()', ['Streams', 'groupingBy', 'TreeMap'], () => {
+    T('controller', 'loanReport()');
+    T('model', 'items.stream().filter(LibraryItem::isBorrowed)');
+    T('model', '.collect(groupingBy(i -> i.getBorrower().getName(), TreeMap::new, counting()))');
+    counts = library.loansPerMember();
+    T('model', 'availableItems(): filter(!isBorrowed).sorted(comparing(getTitle)).toList()');
+    avail = library.availableItems();
+  });
+  const max = Math.max(1, ...Object.values(counts));
+  const txt = Object.keys(counts).length ? 'Items currently on loan:\n' + Object.entries(counts).map(([n, c]) => `  ${n}: ${c}`).join('\n') + `\n\nAvailable: ${avail.length}` : 'No items are currently on loan.';
+  openModal(`<h3>Loan report</h3><div class="ins-sub"><code>Map&lt;String, Long&gt;</code> from <code>library.loansPerMember()</code></div>
+    <div style="margin:14px 0">${Object.entries(counts).map(([n, c]) => `<div class="report-bar"><span>${esc(n)}</span><div class="bar"><i style="width:${c / max * 100}%"></i></div><b>${c}</b></div>`).join('') || '<div class="ins-sub">Nothing on loan.</div>'}</div>
+    <div class="sig">${esc(txt)}</div>
+    <div class="sec-h"><b>Available, sorted by title</b><span class="chip green">${avail.length}</span></div>
+    <div class="chips">${avail.map(i => `<span class="chip">${esc(i.getTitle())}</span>`).join('')}</div>
+    <div class="m-foot"><button class="btn primary" data-close>OK</button></div>`);
+}
+
+/* ---- threads ---- */
+const SAMPLE = [['Design Patterns', 'Erich Gamma'], ['The Pragmatic Programmer', 'Andrew Hunt'], ['Code Complete', 'Steve McConnell'], ['Java Concurrency in Practice', 'Brian Goetz'],
+  ['Domain-Driven Design', 'Eric Evans'], ['Clean Architecture', 'Robert C. Martin'], ['Head First Design Patterns', 'Eric Freeman'], ['Algorithms', 'Robert Sedgewick'],
+  ['Operating System Concepts', 'Abraham Silberschatz'], ['Database System Concepts', 'Abraham Silberschatz']];
+function startImport(){
+  if (STATE.importing) return;
+  STATE.importing = true; STATE.importPct = 0; STATE.importMsg = 'doInBackground() running on a worker thread…'; STATE.tab = 'threads'; renderDock();
+  const van = document.getElementById('van'), vanAt = P(2.6, 9.2, 0.6);
+  van.classList.add('on'); van.style.transform = `translate(${P(1.2, 9.2)[0]}px,${P(1.2, 9.2)[1]}px)`;
+  let i = 0, added = 0;
+  const step = () => {
+    if (i >= SAMPLE.length){
+      STATE.importing = false; STATE.importMsg = `done() on EDT → "Imported ${added} book(s)"`;
+      van.style.transform = `translate(${P(-6, 9.2)[0]}px,${P(-6, 9.2)[1]}px)`; van.classList.remove('on');
+      TRACE = [];
+      T('view', 'importButton → new ImportWorker(controller, bar, refresh).execute()');
+      T('controller', `addItem("Book", "I001…I010", …) × ${SAMPLE.length}  // on SwingWorker-pool-1`);
+      T('model', added ? `items.add(Book) × ${added}` : 'IllegalArgumentException × 10 → already imported, skipped');
+      if (added){ T('dao', `itemDAO.insert(...) × ${added}`); T('db', `INSERT INTO items (id, type, title, detail) VALUES (...)  × ${added}`); }
+      T('view', `process(chunks) → bar.setValue(...) ; done() → bar.setString("Imported ${added} book(s)")`);
+      LAST_OP = { id: ++STATE.opSeq, title: 'Import', call: 'ImportWorker.execute()  // SwingWorker<Integer, Integer>', concepts: ['SwingWorker', 'Threads', 'EDT'], trace: TRACE.slice(), okMsg: `Imported ${added} book(s). The window stayed responsive the whole time.` };
+      renderTracker(true); renderAll(); toast('ok', 'Import finished', `Imported ${added} book(s)`);
+      return;
+    }
+    const id = 'I' + String(i + 1).padStart(3, '0');
+    CUR_THREAD = 'SwingWorker-pool-1-thread-1';
+    const prev = TRACE; TRACE = [];
+    try { controller.addItem('Book', id, ...SAMPLE[i]); added++; STATE.added++; } catch (e){ /* imported before - skip it */ }
+    TRACE = prev; CUR_THREAD = 'AWT-EventQueue-0';
+    i++; STATE.importPct = Math.round(i * 100 / SAMPLE.length); STATE.importMsg = `publish(${STATE.importPct}) · ${SAMPLE[i - 1][0]}`;
+    renderScene({ spawnFrom: vanAt }); renderKPIs(); renderHeader(); renderDock(); if (!STATE.sel) renderInspector();
+    setTimeout(step, 420);
+  };
+  setTimeout(step, 900);
+}
+function runRace(safe){
+  if (STATE.race && !STATE.race.done) return;
+  const r = STATE.race = { safe, count: 0, a: 0, b: 0, lost: 0, done: false }; renderDock();
+  const tick = () => {
+    for (let n = 0; n < 40 && r.a < 1000; n++){
+      if (!safe && Math.random() < 0.3){ const v = r.count; r.count = v + 1; r.lost++; }   // both threads read v, both write v+1
+      else r.count += 2;
+      r.a++; r.b++;
+    }
+    const c = document.getElementById('raceCount'), l = document.getElementById('raceLost');
+    if (c){ c.textContent = r.count.toLocaleString(); l.textContent = r.lost; }
+    if (r.a < 1000) requestAnimationFrame(tick);
+    else {
+      r.done = true; renderDock();
+      toast(safe ? 'ok' : 'err', safe ? 'synchronized: 2,000' : 'Race condition', safe ? 'Only one thread at a time can run safeIncrement(), so no update is lost.' : `${r.lost} updates were lost. count++ is three steps (read, add, write) and the threads overwrote each other.`);
+    }
+  };
+  requestAnimationFrame(tick);
+}
+function checkerTick(){
+  if (!STATE.checkerOn) return;
+  const before = STATE.overdue;
+  STATE.overdue = controller.countOverdue(); STATE.lastCheck = new Date();
+  renderKPIs(STATE.overdue !== before ? 3 : null);
+  if (STATE.tab === 'threads' || STATE.tab === 'sql') renderDock();
+  const b = document.getElementById('ocBeat'); if (b){ b.classList.add('pulse'); }
+}
+
+/* ---- search ---- */
+const sIn = document.getElementById('search'), sDrop = document.getElementById('searchDrop');
+function renderSearch(){
+  STATE.searchQ = sIn.value; renderScene();
+  if (!sIn.value.trim()){ sDrop.classList.remove('open'); return; }
+  const res = library.search(sIn.value);
+  sDrop.innerHTML = `<div class="dd-head"><span>${res.length} result(s)</span><code>items.search(predicate)</code></div>` + (res.slice(0, 8).map(i => `<div class="dd-row" data-id="${esc(i.getId())}">${icon(i.constructor.name)}<div class="r-main"><div class="r-t" style="font-weight:600">${esc(i.getTitle())}</div><div class="r-s" style="color:var(--muted);font-size:11px">${esc(i.getId())} · ${esc(detailOf(i))}</div></div></div>`).join('') || '<div class="dd-head">No match. Try "java" or "Bloch".</div>');
+  sDrop.classList.add('open');
+  sDrop.querySelectorAll('.dd-row').forEach(r => r.onmousedown = e => { e.preventDefault(); sDrop.classList.remove('open'); select('item', r.dataset.id); });
+}
+sIn.addEventListener('input', renderSearch);
+sIn.addEventListener('focus', renderSearch);
+sIn.addEventListener('blur', () => setTimeout(() => sDrop.classList.remove('open'), 120));
+sIn.addEventListener('keydown', e => {
+  if (e.key === 'Enter'){ const t = sIn.value; let n = 0; runOp('Search', `searchButton → controller.search("${t}")`, ['Generics · Repository<T>', 'Streams', 'Lambdas'], () => { n = controller.search(t).length; T('view', `table.setModel(${n} row(s))`); }); LAST_OP.okMsg = `${n} item(s) matched.`; renderTracker(false); }
+  if (e.key === 'Escape'){ sIn.value = ''; renderSearch(); sIn.blur(); }
+});
+addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement.tagName !== 'INPUT'){ e.preventDefault(); sIn.focus(); }
+  if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+});
+
+/* ---- wiring ---- */
+document.getElementById('btnAddItem').onclick = openAddItem;
+document.getElementById('btnAddMember').onclick = openAddMember;
+document.getElementById('btnImport').onclick = startImport;
+document.getElementById('btnReport').onclick = openReport;
+const advance = n => { STATE.today += n; checkerTick(); renderAll(); toast('warn', `Day ${STATE.today}`, `The clock moved ${n} day(s). Loans out for more than ${LibraryController.loanDays()} days become overdue.`); };
+document.getElementById('nextDay').onclick = () => advance(1);
+document.getElementById('nextWeek').onclick = () => advance(7);
+
+buildStatic();
+LAST_OP = { id: ++STATE.opSeq, title: 'Start-up', call: 'GuiMain.main() → controller.loadFromDatabase()', concepts: ['MVC', 'DAO', 'JDBC'],
+  okMsg: 'The in-memory model was rebuilt from lms.db, and open loans were replayed through the same rules.',
+  trace: [{ layer: 'view', text: 'SwingUtilities.invokeLater(() -> new MainFrame(controller))' }, { layer: 'controller', text: 'loadFromDatabase()' },
+    { layer: 'dao', text: 'itemDAO.findAll() · memberDAO.findAll() · loanDAO.findOpenLoans()' }, { layer: 'db', text: 'SELECT … FROM items / members / loans WHERE returned_at IS NULL' },
+    { layer: 'model', text: `library.addItem × ${library.getItems().length} · addMember × ${library.getMembers().length} · borrowItem × ${DB.loans.length} (replay)` },
+    { layer: 'view', text: 'refreshTable() · OverdueChecker.start(controller, 3000, …)' }] };
+// the trace above is listed in call order; the stepper reads layers, not order
+renderAll(); renderTracker(true); fit();
+checkerTick(); setInterval(checkerTick, 3000);
+</script>
+</body>
+</html>
