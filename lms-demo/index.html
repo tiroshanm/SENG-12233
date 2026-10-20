@@ -231,7 +231,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:11.5px}
 @keyframes bob{50%{transform:translateY(-5px)}}
 .od circle{animation:odp 1.4s infinite;transform-box:fill-box;transform-origin:center}
 @keyframes odp{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.6);opacity:0}}
-.mem{cursor:pointer;transition:opacity .3s}
+.mem{cursor:pointer;transition:transform .75s cubic-bezier(.45,.05,.2,1),opacity .3s}
 .mem .mname{display:none}
 .mem:hover .mname,.mem.sel .mname{display:block}
 .mem.sel .pinbody{filter:drop-shadow(0 0 0 #fff) drop-shadow(0 4px 10px rgba(37,99,235,.55))}
@@ -241,8 +241,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:11.5px}
 .db.pulse .dbring{animation:ring 1s}
 @keyframes ring{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.8)}}
 .dbring{transform-box:fill-box;transform-origin:center}
-.flow{fill:none;stroke:var(--blue);stroke-width:2.5;stroke-dasharray:6 6;stroke-linecap:round;animation:flow 1.2s linear forwards}
-@keyframes flow{0%{stroke-dashoffset:60;opacity:1}80%{opacity:1}100%{stroke-dashoffset:0;opacity:0}}
 #van{transition:transform 1.4s cubic-bezier(.5,.05,.3,1),opacity .6s;opacity:0}
 #van.on{opacity:1}
 
@@ -325,7 +323,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:11.5px}
   <div class="zoom overlay panel">
     <button id="zIn" title="Zoom in">+</button><button id="zOut" title="Zoom out">−</button><button id="zFit" title="Fit" style="font-size:14px">⤢</button>
   </div>
-  <div class="hint">Drag to pan · click a box or a member pin</div>
+  <div class="hint">Members wait outside and borrow at the reception · drag to pan · click anything</div>
 
   <aside class="inspector overlay panel"><div class="ins-scroll" id="inspector"></div></aside>
   <section class="tracker overlay panel" id="tracker"></section>
@@ -603,7 +601,7 @@ class LibraryController {
 /* =====================================================================
    2. APP STATE + SEED DATA  (what loadFromDatabase() would rebuild)
    ===================================================================== */
-const STATE = { today: 20, sel: null, catFilter: 'All', tab: 'members', sortByActivity: false, searchQ: '',
+const STATE = { today: 20, sel: null, visit: null, catFilter: 'All', tab: 'members', sortByActivity: false, searchQ: '',
   feeDays: 3, checkerOn: true, lastCheck: null, overdue: 0, importing: false, importPct: 0, importMsg: 'Not started',
   race: null, added: 0, opSeq: 0 };
 let BOOTING = true, CUR_THREAD = 'AWT-EventQueue-0';
@@ -657,13 +655,17 @@ const faceR = (x, y, z, txt, size, fill, weight = 800) => { const [sx, sy] = P(x
 
 const COLORS = { Book: '#dda466', DVD: '#7480f5', Magazine: '#f07a97' };
 const grid = (x0, y0, cols, rows, dx, dy) => { const a = []; for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) a.push([x0 + c * dx, y0 + r * dy]); return a; };
+const zone = (x0, y0, cols, rows, dx, dy, shelf) => ({ slots: grid(x0, y0, cols, rows, dx, dy), x0, y0, cols, rows, dx, dy, shelf });
+/* Every section lives INSIDE the library building (x 2.5–21, y 1.8–14.5). */
 const ZONES = {
-  Book: { slots: grid(1.25, 11.2, 4, 4, 1.6, 1.7), pallet: '#c9a27a' },
-  DVD: { slots: grid(18.85, 1.7, 3, 3, 1.5, 2.0), pallet: '#b8bdf2' },
-  Magazine: { slots: grid(18.85, 11.3, 3, 3, 1.5, 1.75), pallet: '#f0b3c1' },
-  Lab: { slots: grid(1.25, 19.3, 4, 2, 1.6, 1.7), pallet: '#9fded3' }      // classes students create in the OOP Lab
+  Book: zone(3.5, 3.0, 4, 4, 1.45, 1.55, '#b98552'),
+  DVD: zone(10.3, 3.0, 3, 3, 1.4, 1.55, '#8f95d8'),
+  Magazine: zone(15.7, 3.0, 3, 3, 1.4, 1.55, '#d78ea0'),
+  Lab: zone(15.7, 8.6, 3, 2, 1.4, 1.55, '#6cc6b6')       // classes students create in the OOP Lab
 };
-const memberWorld = i => [9.9 + (i % 3) * 2.7, 15.1 + Math.floor(i / 3) * 2.6];
+const SHELF_Z = 0.3;                                       // items sit on top of the shelf units
+const RECEPTION = [12.6, 12.7], DESK_SPOT = [10.9, 10.5, 1.06];   // where a visiting member stands / where the item is handed over
+const memberWorld = i => [9.4 + (i % 3) * 2.5, 17.0 + Math.floor(i / 3) * 2.4];   // waiting outside on the plaza
 const PIN = 'M0 0 C-3 -7 -15 -14 -15 -26 A15 15 0 1 1 15 -26 C15 -14 3 -7 0 0Z';
 
 function tree(x, y, r = 15){
@@ -679,55 +681,105 @@ function labelPin(x, y, z, text, color){
     <circle cx="${-w/2+11}" cy="-25" r="4" fill="${color}"/>
     <text x="${-w/2+20}" y="-21" font-size="11" font-weight="700" fill="#0f172a">${esc(text)}</text></g>`;
 }
+/* deterministic "random" so the book spines look the same on every load */
+let seedR = 7; const rnd = () => (seedR = (seedR * 9301 + 49297) % 233280) / 233280;
+const SPINES = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#64748b'];
+/** A bookcase against the back wall (runs along x, front face at y + 0.45). */
+function bookcaseX(x0, x1){
+  let g = box(x0, 1.8, 0, x1 - x0, 0.45, 2.1, '#9a6b42'); const fy = 2.26;
+  for (const z of [0.12, 0.8, 1.48]){
+    g += `<polygon points="${pts([[x0+0.05,fy,z-0.05],[x1-0.05,fy,z-0.05],[x1-0.05,fy,z],[x0+0.05,fy,z]])}" fill="#7c4f2c"/>`;
+    for (let x = x0 + 0.1; x < x1 - 0.2;){ const w = 0.1 + rnd() * 0.08, h = 0.42 + rnd() * 0.14;
+      g += `<polygon points="${pts([[x,fy,z],[x+w,fy,z],[x+w,fy,z+h],[x,fy,z+h]])}" fill="${SPINES[Math.floor(rnd() * SPINES.length)]}"/>`; x += w + 0.03; }
+  }
+  return g;
+}
+/** A bookcase against the left wall (runs along y, front face at x + 0.45). */
+function bookcaseY(y0, y1){
+  let g = box(2.5, y0, 0, 0.45, y1 - y0, 2.1, '#9a6b42'); const fx = 2.96;
+  for (const z of [0.12, 0.8, 1.48]){
+    g += `<polygon points="${pts([[fx,y0+0.05,z-0.05],[fx,y1-0.05,z-0.05],[fx,y1-0.05,z],[fx,y0+0.05,z]])}" fill="#7c4f2c"/>`;
+    for (let y = y0 + 0.1; y < y1 - 0.2;){ const w = 0.1 + rnd() * 0.08, h = 0.42 + rnd() * 0.14;
+      g += `<polygon points="${pts([[fx,y,z],[fx,y+w,z],[fx,y+w,z+h],[fx,y,z+h]])}" fill="${SPINES[Math.floor(rnd() * SPINES.length)]}"/>`; y += w + 0.03; }
+  }
+  return g;
+}
+function facePoly(face, a0, a1, z0, z1, c, fill, extra = ''){
+  const p = face === 'y' ? [[a0,c,z0],[a1,c,z0],[a1,c,z1],[a0,c,z1]] : [[c,a0,z0],[c,a1,z0],[c,a1,z1],[c,a0,z1]];
+  return `<polygon points="${pts(p)}" fill="${fill}" ${extra}/>`;
+}
 
 function buildStatic(){
-  let g = box(0, 0, -0.7, 24, 24, 0.7, '#f7f9fd');
-  // roads
-  g += flat(0, 9, 24, 1.3, '#dde4ee') + flat(7.2, 0, 1.2, 9, '#dde4ee') + flat(16.9, 10.3, 1.2, 13.7, '#dde4ee');
-  g += `<line x1="${P(0,9.65)[0]}" y1="${P(0,9.65)[1]}" x2="${P(24,9.65)[0]}" y2="${P(24,9.65)[1]}" stroke="#fff" stroke-width="2" stroke-dasharray="10 9"/>`;
-  // zone pads
-  g += flat(0.8, 10.8, 6.7, 7.5, '#fbeedd', 0, 'stroke="#f0d7b6"') + flat(18.4, 1.2, 5, 6.8, '#e7e9fe', 0, 'stroke="#cfd3fb"')
-     + flat(18.4, 10.9, 5, 5.8, '#fde6ec', 0, 'stroke="#f7c9d5"') + flat(8.8, 13.6, 8, 9.6, '#e3ecfb', 0, 'stroke="#c9d8f5"');
-  g = g.replace(/(fill="#fbeedd"|fill="#e7e9fe"|fill="#fde6ec")/g, '$1 data-map="shelves" class="hot"');
-  g += flat(0.8, 18.9, 6.7, 3.9, '#dcf5f0', 0, 'stroke="#b3e6dc" data-map="kinds" class="hot"');
-  // pallets
-  g += '<g data-map="shelves" class="hot">';
-  for (const [t, z] of Object.entries(ZONES)) z.slots.forEach(([x, y]) => g += box(x - 0.05, y - 0.05, 0, 1.05, 1.05, 0.12, z.pallet));
+  seedR = 7;
+  const WALL = '#2f6bf0', LOW = '#3d7cf6';
+  let g = box(0, 0, -0.7, 24, 24, 0.7, '#f4f8f2');
+  // street (deliveries) + entrance path + plaza where members wait
+  g += flat(21.8, 0, 1.6, 24, '#dde4ee');
+  g += `<line x1="${P(22.6,0)[0]}" y1="${P(22.6,0)[1]}" x2="${P(22.6,24)[0]}" y2="${P(22.6,24)[1]}" stroke="#fff" stroke-width="2" stroke-dasharray="10 9"/>`;
+  g += flat(10.6, 14.7, 3.2, 1.2, '#e5ebf3') + flat(7.6, 15.6, 10.6, 8.3, '#e3ecfb', 0, 'stroke="#c9d8f5"');
+  [[5, 0.6, 11], [12, 0.5, 10], [18.5, 0.6, 11], [1, 5.5, 11], [1, 11, 11]].forEach(([x, y, r]) => g += tree(x, y, r));
+  // the building: floor, back + left walls (cut away at the front so we can look inside)
+  g += '<g data-map="building" class="hot">';
+  g += flat(2.5, 1.8, 18.6, 12.9, '#f6efe4', 0, 'stroke="#e7dccb"');
+  for (let x = 4.5; x < 21; x += 2) g += `<polyline points="${pts([[x,1.8,0],[x,14.7,0]])}" stroke="#efe5d6" stroke-width="1" fill="none"/>`;
+  g += box(2.5, 1.5, 0, 18.6, 0.3, 3.0, WALL) + box(2.2, 1.5, 0, 0.3, 13.2, 3.0, WALL);
+  g += faceL(4.0, 1.8, 2.3, 'BOOKS', 15, '#ffffff') + faceL(10.9, 1.8, 2.3, 'DVDs', 15, '#ffffff') + faceL(15.9, 1.8, 2.3, 'MAGAZINES', 15, '#ffffff');
+  g += faceR(2.5, 14.0, 2.35, 'MAIN LIBRARY', 16, '#ffffff') + faceR(2.5, 14.0, 1.75, 'LIBRARY MANAGEMENT SYSTEM', 8, '#dbe7ff', 700);
   g += '</g>';
-  // database cylinder
-  const [dx, dy] = P(3.6, 4.4, 0), H = 64;
-  g += `<g class="db hot" id="db" data-map="ledger"><ellipse cx="${dx}" cy="${dy}" rx="44" ry="22" fill="rgba(30,58,110,.12)"/>
-    <ellipse class="dbring" cx="${dx}" cy="${dy-H}" rx="36" ry="18" fill="none" stroke="#2563eb" stroke-width="3"/>
-    <path d="M${dx-36} ${dy-H} v${H} a36 18 0 0 0 72 0 v${-H}z" fill="url(#dbG)" stroke="#94a3b8"/>
-    <path d="M${dx-36} ${dy-H+22} a36 18 0 0 0 72 0 M${dx-36} ${dy-H+44} a36 18 0 0 0 72 0" fill="none" stroke="#2563eb" stroke-width="3" opacity=".8"/>
-    <ellipse cx="${dx}" cy="${dy-H}" rx="36" ry="18" fill="#f8fafc" stroke="#94a3b8"/>
-    <text x="${dx}" y="${dy-H+5}" text-anchor="middle" font-size="11" font-weight="800" fill="#1d4ed8">SQLite</text></g>`;
-  g += `<path d="M${P(4.6,5.8)[0]} ${P(4.6,5.8)[1]} L${P(8.2,5.8)[0]} ${P(8.2,5.8)[1]}" stroke="#93b4f8" stroke-width="2" stroke-dasharray="3 5"/>`;
-  // building + wing
-  g += '<g data-map="building" class="hot">' + box(16, 2.6, 0, 2, 4.6, 2.3, '#3d7cf6');
-  g += box(8.6, 1.4, 0, 7.4, 6.6, 3.4, '#2f6bf0') + box(8.45, 1.25, 3.4, 7.7, 6.9, 0.22, '#1e4fd6');
-  g += box(10, 2.5, 3.62, 1.2, 1, 0.5, '#e2e8f0') + box(14, 2.6, 3.62, 1.1, 0.9, 0.4, '#e2e8f0');
-  g += flat(11.6, 3.6, 2.6, 2.6, '#ffffff', 3.63, 'stroke="#bfd2fb" stroke-width="2"') + flat(12.2, 4.2, 1.4, 1.4, '#2563eb', 3.64);
-  [[9.3, 10.7], [11.3, 12.7], [13.3, 14.7]].forEach(([a, b]) => {
-    g += `<polygon points="${pts([[a,8.01,0],[b,8.01,0],[b,8.01,2],[a,8.01,2]])}" fill="#1b3f9f"/>`;
-    for (let z = 0.3; z < 2; z += 0.35) g += `<polyline points="${pts([[a,8.02,z],[b,8.02,z]])}" stroke="#3567d8" stroke-width="1.2" fill="none"/>`;
-  });
-  g += faceL(9.3, 8, 2.45, 'MAIN LIBRARY', 13, '#ffffff');
-  g += faceR(16, 7.6, 2.75, 'LMS', 17, '#ffffff');
-  g += faceR(18, 6.7, 1.2, 'RETURNS', 10, '#dbe7ff', 700) + '</g>';
-  // desk
-  g += '<g data-map="desk" class="hot">' + box(10.2, 11.2, 0, 4.6, 1.1, 0.95, '#ffffff') + flat(10.2, 11.2, 4.6, 1.1, '#2563eb', 0.96, 'opacity=".9"');
-  g += faceL(10.5, 12.3, 0.25, 'CIRCULATION', 8, '#2563eb', 700) + '</g>';
-  // trees
-  [[0.9, 1.2], [0.8, 7.4, 12], [6.3, 0.7, 12], [23.2, 18.5], [19.5, 20.5, 13], [23, 22.8, 12], [3.9, 23.5, 10], [7.6, 21.3, 12], [12.5, 0.4, 11]]
-    .forEach(([x, y, r]) => g += tree(x, y, r));
+  // wall furniture: bookcases, a DVD screen, a magazine rack
+  g += bookcaseX(2.95, 9.4) + bookcaseY(2.4, 8.9);
+  g += box(10.2, 1.8, 0, 3.8, 0.35, 0.85, '#c7cbf3');
+  for (let x = 10.3; x < 13.9; x += 0.16) g += facePoly('y', x, x + 0.1, 0.12, 0.72, 2.16, ['#4f46e5', '#6366f1', '#818cf8', '#312e81'][Math.floor(rnd() * 4)]);
+  g += facePoly('y', 10.6, 13.6, 1.05, 2.0, 1.81, '#0f172a', 'stroke="#1e293b" stroke-width="3"');
+  { const [tx, ty] = P(12.1, 1.81, 1.52); g += `<path d="M${tx-5} ${ty-12} l13 7 -13 7z" fill="#a5b4fc"/>`; }
+  g += box(15.4, 1.8, 0, 4.6, 0.3, 1.9, '#f3c6d1');
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 6; c++) g += facePoly('y', 15.6 + c * 0.72, 16.12 + c * 0.72, 0.2 + r * 0.58, 0.68 + r * 0.58, 2.11, SPINES[Math.floor(rnd() * SPINES.length)], 'opacity=".9"');
+  // section rugs + shelf units that hold the items
+  const rug = { Book: '#fbeedd', DVD: '#e7e9fe', Magazine: '#fde6ec', Lab: '#dcf5f0' };
+  for (const [t, z] of Object.entries(ZONES)){
+    const w = (z.cols - 1) * z.dx + 1.55, d = (z.rows - 1) * z.dy + 1.55;
+    g += flat(z.x0 - 0.3, z.y0 - 0.3, w, d, rug[t], 0.005, `data-map="${t === 'Lab' ? 'kinds' : 'shelves'}" class="hot"`);
+  }
+  g += '<g data-map="shelves" class="hot">';
+  for (const z of Object.values(ZONES)) for (let r = 0; r < z.rows; r++)
+    g += box(z.x0 - 0.12, z.y0 + r * z.dy - 0.12, 0, (z.cols - 1) * z.dx + 1.19, 1.19, SHELF_Z, z.shelf);
+  g += '</g>';
+  // reading table
+  g += box(3.7, 9.8, 0, 2.3, 1.1, 0.55, '#d6b48c') + box(3.95, 11.15, 0, 0.55, 0.5, 0.35, '#94a3b8') + box(5.2, 11.15, 0, 0.55, 0.5, 0.35, '#94a3b8');
+  // records office: the database behind the reception
+  const [dx, dy] = P(5.9, 12.9, 0), H = 52;
+  g += `<g class="db hot" id="db" data-map="ledger"><ellipse cx="${dx}" cy="${dy}" rx="36" ry="18" fill="rgba(30,58,110,.12)"/>
+    <ellipse class="dbring" cx="${dx}" cy="${dy-H}" rx="30" ry="15" fill="none" stroke="#2563eb" stroke-width="3"/>
+    <path d="M${dx-30} ${dy-H} v${H} a30 15 0 0 0 60 0 v${-H}z" fill="url(#dbG)" stroke="#94a3b8"/>
+    <path d="M${dx-30} ${dy-H+18} a30 15 0 0 0 60 0 M${dx-30} ${dy-H+36} a30 15 0 0 0 60 0" fill="none" stroke="#2563eb" stroke-width="3" opacity=".8"/>
+    <ellipse cx="${dx}" cy="${dy-H}" rx="30" ry="15" fill="#f8fafc" stroke="#94a3b8"/>
+    <text x="${dx}" y="${dy-H+4}" text-anchor="middle" font-size="10" font-weight="800" fill="#1d4ed8">SQLite</text></g>`;
+  g += `<path d="M${P(9.4,11.0,0.5)[0]} ${P(9.4,11.0,0.5)[1]} L${P(7.0,12.9,0.6)[0]} ${P(7.0,12.9,0.6)[1]}" stroke="#93b4f8" stroke-width="2" stroke-dasharray="3 5"/>`;
+  // reception: the librarian behind the desk, the desk, a returns trolley
+  const [lx, ly] = P(12.0, 9.75, 0);
+  g += `<g data-map="desk" class="hot"><g transform="translate(${lx},${ly})"><title>The librarian (the View: MainFrame)</title><ellipse rx="12" ry="6" fill="rgba(30,58,110,.18)"/>
+    <path d="${PIN}" transform="scale(.85)" fill="#0f172a" stroke="#fff" stroke-width="2.5"/><text y="-19" text-anchor="middle" font-size="10" font-weight="800" fill="#fff">LB</text></g>`;
+  g += box(9.4, 10.3, 0, 5.4, 1.0, 1.05, '#ffffff') + flat(9.4, 10.3, 5.4, 1.0, '#2563eb', 1.06, 'opacity=".85"');
+  g += box(10.1, 10.45, 1.06, 0.55, 0.4, 0.42, '#1e293b') + box(13.4, 10.45, 1.06, 0.55, 0.4, 0.42, '#1e293b');
+  g += faceL(9.9, 11.3, 0.32, 'RECEPTION', 10, '#2563eb', 800) + '</g>';
+  g += flat(10.6, 11.6, 3.2, 2.9, '#dbe7ff', 0.006);
+  g += box(15.3, 12.5, 0, 1.3, 0.7, 0.62, '#cbd5e1') + faceL(15.35, 13.2, 0.18, 'RETURNS', 6.5, '#475569', 800);
+  // low front + side walls (with the entrance and a delivery door)
+  g += '<g data-map="building" class="hot">';
+  g += box(2.5, 14.4, 0, 8.1, 0.3, 0.55, LOW) + box(13.8, 14.4, 0, 7.3, 0.3, 0.55, LOW);
+  g += box(20.8, 1.8, 0, 0.3, 6.2, 0.55, LOW) + box(20.8, 10.2, 0, 0.3, 4.2, 0.55, LOW);
+  g += box(10.4, 14.3, 0, 0.22, 0.5, 1.1, '#1d4ed8') + box(13.78, 14.3, 0, 0.22, 0.5, 1.1, '#1d4ed8');
+  g += '</g>';
+  [[2.95, 13.9, 8], [20.2, 13.8, 8]].forEach(([x, y, r]) => g += tree(x, y, r));
+  [[1.2, 16.6, 13], [1.5, 21.6, 12], [5, 23, 11], [5.5, 18.3, 11], [19.8, 16.9, 12], [20.2, 21.8, 13]].forEach(([x, y, r]) => g += tree(x, y, r));
   document.getElementById('ground').innerHTML = g;
-  // van (used by the import worker)
-  document.getElementById('fx').innerHTML = `<g id="van" style="transform:translate(${P(-6,9.2,0)[0]}px,${P(-6,9.2,0)[1]}px)">
-    ${box(0, 0, 0, 2.4, 1, 1.2, '#ffffff')}${box(2.4, 0.05, 0, 0.8, 0.9, 0.85, '#2563eb')}
-    ${faceL(0.2, 1, 0.45, 'IMPORT', 9, '#2563eb', 800)}</g>`;
-  document.getElementById('labels').innerHTML = labelPin(4.2, 10.8, 1.6, 'Books · Reservable', '#c27a34') + labelPin(20.9, 1.2, 1.6, 'DVDs', '#5b63e6')
-    + labelPin(20.9, 10.9, 1.6, 'Magazines', '#d9466d') + labelPin(4.2, 18.9, 1.6, 'Your subclasses', '#0f9488') + labelPin(3.6, 4.4, 3.6, 'lms.db', '#2563eb') + labelPin(12.3, 4.7, 4.3, 'Library · Repository<T>', '#1d4ed8');
+  // delivery van (used by the import worker), driving along the street
+  document.getElementById('fx').innerHTML = `<g id="van" style="transform:translate(${P(22.2,27,0)[0]}px,${P(22.2,27,0)[1]}px)">
+    ${box(0, 0, 0, 1, 2.4, 1.2, '#ffffff')}${box(0.05, -0.8, 0, 0.9, 0.8, 0.85, '#2563eb')}
+    ${faceR(1, 2.25, 0.45, 'IMPORT', 9, '#2563eb', 800)}</g>`;
+  // section names are painted on the back wall; pins mark the places that map to code
+  document.getElementById('labels').innerHTML = labelPin(17.4, 8.6, 1.0, 'Your subclasses', '#0f9488') + labelPin(5.9, 12.9, 2.4, 'lms.db · records', '#2563eb')
+    + labelPin(15.2, 15.2, 0.1, 'Entrance', '#15803d');
 }
 
 function itemShape(type){
@@ -750,7 +802,9 @@ function setTf(el, x, y, s = 1){ el.style.transform = `translate(${x.toFixed(1)}
 function renderScene(opts = {}){
   const dyn = document.getElementById('dyn');
   const items = library.getItems(), members = library.getMembers();
-  const mpos = new Map(members.map((m, i) => [m.getMemberId(), memberWorld(i)]));
+  const V = STATE.visit;
+  const homeOrDesk = (id, i) => V && V.mid === id ? RECEPTION : memberWorld(i);
+  const mpos = new Map(members.map((m, i) => [m.getMemberId(), homeOrDesk(m.getMemberId(), i)]));
   const typeIdx = { Book: 0, DVD: 0, Magazine: 0, Lab: 0 }, held = new Map();
   const match = STATE.searchQ.trim() ? new Set(library.search(STATE.searchQ).map(i => i.getId())) : null;
   let ghosts = ''; const live = new Set();
@@ -758,11 +812,13 @@ function renderScene(opts = {}){
     const type = it.constructor.name, zk = ZONES[type] ? type : 'Lab', z = ZONES[zk], idx = typeIdx[zk]++;
     const slot = z.slots[idx % z.slots.length], layer = Math.floor(idx / z.slots.length);
     let wx, wy, wz, sc = 1;
-    if (it.isBorrowed()){
-      if (layer === 0) ghosts += flat(slot[0], slot[1], 0.95, 0.95, 'none', 0.13, 'stroke="#94a3b8" stroke-dasharray="3 3" stroke-width="1.2"');
-      const mid = it.getBorrower().getMemberId(), mp = mpos.get(mid), k = held.get(mid) || 0; held.set(mid, k + 1);
-      wx = mp[0] + 0.25 + (k % 2) * 0.05; wy = mp[1] - 1.15; wz = k * 0.34; sc = 0.6;
-    } else { wx = slot[0]; wy = slot[1]; wz = 0.12 + layer * 0.58; }
+    const at = V && V.iid === it.getId() ? V.itemAt : null;      // mid-animation override (shelf / desk / member)
+    const carried = mid => { const mp = mpos.get(mid), k = held.get(mid) || 0; held.set(mid, k + 1); return [mp[0] + 0.25 + (k % 2) * 0.05, mp[1] - 1.15, k * 0.34, 0.6]; };
+    if (it.isBorrowed() || at) ghosts += layer === 0 && at !== 'shelf' ? flat(slot[0], slot[1], 0.95, 0.95, 'none', SHELF_Z + 0.01, 'stroke="#94a3b8" stroke-dasharray="3 3" stroke-width="1.2"') : '';
+    if (at === 'desk'){ [wx, wy, wz] = DESK_SPOT; sc = 0.75; }
+    else if (at === 'member') [wx, wy, wz, sc] = carried(V.mid);
+    else if (at !== 'shelf' && it.isBorrowed()) [wx, wy, wz, sc] = carried(it.getBorrower().getMemberId());
+    else { wx = slot[0]; wy = slot[1]; wz = SHELF_Z + layer * 0.58; }
     const id = it.getId(); live.add(id);
     let g = itemEls.get(id);
     const [sx, sy] = P(wx, wy, wz);
@@ -783,7 +839,7 @@ function renderScene(opts = {}){
   }
   document.getElementById('ghosts').innerHTML = ghosts;
   members.forEach((m, i) => {
-    const id = m.getMemberId(), [mx, my] = memberWorld(i); live.add('m:' + id);
+    const id = m.getMemberId(), [mx, my] = homeOrDesk(id, i); live.add('m:' + id);
     let g = memEls.get(id);
     if (!g){
       g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.classList.add('mem');
@@ -801,6 +857,7 @@ function renderScene(opts = {}){
       <text x="0" y="4" text-anchor="middle" font-size="10" font-weight="700" fill="${full ? '#dc2626' : '#334155'}">${badge}</text></g>
       <g class="mname" transform="translate(0,-54)"><rect x="${-nw/2}" y="-11" width="${nw}" height="22" rx="11" fill="#0f172a"/><text x="0" y="4" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">${nm}</text></g>`;
     g.classList.toggle('sel', STATE.sel?.kind === 'member' && STATE.sel.id === id);
+    g.classList.toggle('visiting', !!V && V.mid === id);
     g.classList.toggle('dim', !!match);
   });
   for (const [id, g] of itemEls) if (!live.has(id)){ g.remove(); itemEls.delete(id); }
@@ -808,20 +865,16 @@ function renderScene(opts = {}){
   reorderTimer = setTimeout(() => [...dyn.children].sort((a, b) => a.dataset.depth - b.dataset.depth).forEach(n => dyn.appendChild(n)), 800);
 }
 
-function flowLine(fromW, toW){
-  const [x1, y1] = P(...fromW, 0.6), [x2, y2] = P(...toW, 1.2);
-  const mx = (x1 + x2) / 2, my = Math.min(y1, y2) - 70;
-  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  p.setAttribute('d', `M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`); p.setAttribute('class', 'flow');
-  document.getElementById('fx').appendChild(p); setTimeout(() => p.remove(), 1300);
+/* ---- the reception visit: member walks in, item travels shelf ⇄ desk ⇄ member ---- */
+let visitTimers = [];
+function startVisit(v){ visitTimers.forEach(clearTimeout); visitTimers = []; STATE.visit = v; }
+function visitSteps(steps){        // [[delayMs, changes | null], …]; null ends the visit (member walks home)
+  steps.forEach(([ms, ch]) => visitTimers.push(setTimeout(() => {
+    if (ch === null) STATE.visit = null; else if (STATE.visit) Object.assign(STATE.visit, ch);
+    renderScene();
+  }, ms)));
 }
 function pulseDb(){ const d = document.getElementById('db'); if (!d) return; d.classList.remove('pulse'); void d.getBoundingClientRect(); d.classList.add('pulse'); }
-function worldOfItem(id){
-  const items = library.getItems(); const it = items.find(i => i.getId() === id); const t = it.constructor.name;
-  const zoneOf = n => ZONES[n] ? n : 'Lab', zk = zoneOf(t);
-  const idx = items.filter(i => zoneOf(i.constructor.name) === zk).indexOf(it); return ZONES[zk].slots[idx % ZONES[zk].slots.length];
-}
-const worldOfMember = id => memberWorld(library.getMembers().findIndex(m => m.getMemberId() === id));
 
 /* ---- pan & zoom ---- */
 const svg = document.getElementById('scene'), world = document.getElementById('world');
@@ -831,7 +884,7 @@ function fit(){
   const r = svg.getBoundingClientRect(), mobile = innerWidth <= 1180;
   let f = mobile ? { l: 0, t: 10, r: r.width, b: r.height } : { l: 70, t: 120, r: r.width - 392, b: r.height - 240 };
   if (!mobile && typeof LAB !== 'undefined' && LAB.open) f = { l: document.getElementById('lab').getBoundingClientRect().right - r.left + 24, t: 30, r: r.width - 24, b: r.height - 30 };
-  const bw = 1150, bh = 720;
+  const bw = 1040, bh = 660;
   view.k = Math.max(0.3, Math.min(1.5, Math.min((f.r - f.l) / bw, (f.b - f.t) / bh)));
   view.tx = (f.l + f.r) / 2; view.ty = (f.t + f.b) / 2 - 250 * view.k; applyView();
 }
@@ -908,19 +961,22 @@ function renderTracker(animate){
 /* ---- operations (what the Swing buttons do) ---- */
 function doBorrow(itemId, memberId){
   const it = library.getItems().find(i => i.getId() === itemId);
-  const from = it && !it.isBorrowed() ? worldOfItem(itemId) : null;
+  // the member walks in to the reception; the item waits on its shelf until the desk fetches it
+  startVisit({ mid: memberId, iid: it && !it.isBorrowed() ? itemId : null, itemAt: 'shelf' });
   const { error } = runOp('Borrow', `borrowButton → controller.borrow("${itemId}", "${memberId}")`, ['Interfaces · Loanable', 'Exceptions', 'MVC', 'JDBC'],
     () => controller.borrow(itemId, memberId));
   if (!error){
     LAST_OP.okMsg = `${it.getTitle()} is now on loan to ${it.getBorrower().getName()}.`; renderTracker(false);
     toast('ok', 'Borrowed', LAST_OP.okMsg);
-    if (from) flowLine(from, worldOfMember(memberId));
-  }
+    visitSteps([[800, { itemAt: 'desk' }], [1600, { itemAt: null }], [2300, null]]);   // shelf → desk → member → home
+  } else visitSteps([[1500, null]]);                                                   // refused at the desk
 }
 function doReturn(itemId){
   const it = library.getItems().find(i => i.getId() === itemId);
   const mid = it?.getBorrower()?.getMemberId(), lo = LoanDAO.openLoan(itemId);
   let fee = 0, late = 0;
+  // the borrower walks in carrying the item
+  startVisit(mid ? { mid, iid: itemId, itemAt: 'member' } : null);
   const { error } = runOp('Return', `returnButton → controller.giveBack("${itemId}")`, ['Polymorphism', 'Exceptions', 'JDBC'], () => {
     controller.giveBack(itemId);
     late = lo ? Math.max(0, STATE.today - lo.borrowedAt - LibraryController.loanDays()) : 0;
@@ -931,8 +987,8 @@ function doReturn(itemId){
     LAST_OP.okMsg = late ? `Returned ${late} day(s) late. Late fee = ${fee.toFixed(1)}` : `${it.getTitle()} is back on the shelf. No late fee.`;
     renderTracker(false);
     toast(late ? 'warn' : 'ok', late ? 'Returned late' : 'Returned', LAST_OP.okMsg);
-    if (mid) flowLine(worldOfMember(mid), worldOfItem(itemId));
-  }
+    visitSteps([[900, { itemAt: 'desk' }], [1700, { itemAt: null }], [2300, null]]);   // member → desk → shelf, member leaves
+  } else visitSteps([[1500, null]]);
 }
 function doReserve(itemId, memberId, cancel){
   let r;
@@ -1260,13 +1316,13 @@ const SAMPLE = [['Design Patterns', 'Erich Gamma'], ['The Pragmatic Programmer',
 function startImport(){
   if (STATE.importing) return;
   STATE.importing = true; STATE.importPct = 0; STATE.importMsg = 'doInBackground() running on a worker thread…'; STATE.tab = 'threads'; renderDock();
-  const van = document.getElementById('van'), vanAt = P(2.6, 9.2, 0.6);
-  van.classList.add('on'); van.style.transform = `translate(${P(1.2, 9.2)[0]}px,${P(1.2, 9.2)[1]}px)`;
+  const van = document.getElementById('van'), vanAt = P(21.6, 9.4, 0.6);
+  van.classList.add('on'); van.style.transform = `translate(${P(22.2, 8.2)[0]}px,${P(22.2, 8.2)[1]}px)`;
   let i = 0, added = 0;
   const step = () => {
     if (i >= SAMPLE.length){
       STATE.importing = false; STATE.importMsg = `done() on EDT → "Imported ${added} book(s)"`;
-      van.style.transform = `translate(${P(-6, 9.2)[0]}px,${P(-6, 9.2)[1]}px)`; van.classList.remove('on');
+      van.style.transform = `translate(${P(22.2, 27)[0]}px,${P(22.2, 27)[1]}px)`; van.classList.remove('on');
       TRACE = [];
       T('view', 'importButton → new ImportWorker(controller, bar, refresh).execute()');
       T('controller', `addItem("Book", "I001…I010", …) × ${SAMPLE.length}  // on SwingWorker-pool-1`);

@@ -242,8 +242,8 @@ function labShowMapping(k){ LAB.map = { k }; if (!LAB.open) labToggle(true, 'wor
    TAB 1 — REAL WORLD → OOP
    ===================================================================== */
 const MAPPINGS = [
-  { k: 'building', real: 'The library itself', oop: 'Library', kind: 'Class → one object', code: 'Library library = new Library();', why: 'One object owns all the items and members and enforces the rules for the whole library.', tab: 'abs' },
-  { k: 'shelves', real: 'Shelves that hold the stock', oop: 'Repository<LibraryItem>', kind: 'Generic class', code: 'Repository<LibraryItem> items = new Repository<>(LibraryItem::getId);', why: 'A container that works for any type T. The same class also stores the members.', tab: null },
+  { k: 'building', real: 'The library building and everything in it', oop: 'Library', kind: 'Class → one object', code: 'Library library = new Library();', why: 'One object owns all the items on its shelves and all its members, and enforces the rules for the whole library.', tab: 'abs' },
+  { k: 'shelves', real: 'The shelves inside the library', oop: 'Repository<LibraryItem>', kind: 'Generic class', code: 'Repository<LibraryItem> items = new Repository<>(LibraryItem::getId);', why: 'A container that works for any type T. The same class also stores the members.', tab: null },
   { k: 'item', real: 'One particular copy on a shelf', oop: 'new Book("B001", …)', kind: 'Object (instance)', code: 'Book cleanCode = new Book("B001", "Clean Code", "Robert C. Martin");', why: 'The class is the blueprint: what every book has. Each physical copy is one object with its own values.', tab: 'enc' },
   { k: 'kinds', real: 'Books, DVDs and magazines', oop: 'Book / DVD / Magazine extends LibraryItem', kind: 'Inheritance', code: 'public class DVD extends LibraryItem { … }', why: 'They all have an id and a title and can be loaned. That shared part is written once in LibraryItem; each kind adds only what is different.', tab: 'inh' },
   { k: 'fee', real: 'The late fine depends on the kind of item', oop: 'calculateLateFee(int)', kind: 'Polymorphism', code: 'double fee = item.calculateLateFee(days);', why: 'One question ("what is the fine?") that each subclass answers in its own way.', tab: 'poly' },
@@ -252,9 +252,9 @@ const MAPPINGS = [
   { k: 'member', real: 'A person with a library card', oop: 'Student / Staff extends Member', kind: 'Inheritance', code: 'Member amaya = new Student("S001", "Amaya Perera");', why: 'Every member has an id, a name and a borrow count. Only the limit differs between kinds.', tab: 'inh' },
   { k: 'card', real: 'The number printed on the card', oop: 'private String memberId', kind: 'Field (encapsulated)', code: 'amaya.getMemberId()  // read it; nobody can scribble over it', why: 'State lives inside the object. Other classes read it through a getter.', tab: 'enc' },
   { k: 'limit', real: '"Students may borrow 3 items, staff 10"', oop: 'STUDENT_BORROW_LIMIT = 3', kind: 'Constant + rule', code: 'private static final int STUDENT_BORROW_LIMIT = 3;', why: 'The rule is stored once, in the class it belongs to, and checked inside loan().', tab: 'inh' },
-  { k: 'desk', real: 'The circulation desk', oop: 'LibraryController', kind: 'MVC controller', code: 'controller.borrow("B003", "S001");', why: 'Takes requests from the screen (the View) and asks the Model to act.', tab: 'abs' },
+  { k: 'desk', real: 'The reception desk where members borrow and return', oop: 'LibraryController', kind: 'MVC controller', code: 'controller.borrow("B003", "S001");', why: 'Members never walk to the shelves and take items themselves. They ask at reception, and the desk asks the Library (the Model) to apply the rules. The librarian at the screen is the View.', tab: 'abs' },
   { k: 'refuse', real: '"Sorry, that book is already out"', oop: 'ItemNotAvailableException', kind: 'Exception', code: 'throw new ItemNotAvailableException(title + " is already on loan.");', why: 'The caller is forced to handle the problem, so it cannot fail silently.', tab: null },
-  { k: 'ledger', real: 'The loans register', oop: 'LoanDAO + loans table', kind: 'DAO / JDBC', code: 'INSERT INTO loans (item_id, member_id, borrowed_at) VALUES (?, ?, ?)', why: 'Records survive a restart because they are written to lms.db.', tab: null },
+  { k: 'ledger', real: 'The loans register in the records office', oop: 'LoanDAO + loans table', kind: 'DAO / JDBC', code: 'INSERT INTO loans (item_id, member_id, borrowed_at) VALUES (?, ?, ?)', why: 'Records survive a restart because they are written to lms.db.', tab: null },
   { k: 'night', real: 'A clerk who checks for overdue loans', oop: 'OverdueChecker (thread)', kind: 'Runnable / daemon thread', code: 'Thread t = new Thread(checker, "overdue-checker");\nt.setDaemon(true); t.start();', why: 'Work that runs in the background without freezing the window.', tab: null }
 ];
 const QUIZ = ['The ', ['library', 'Class', 'Library — one object of this class runs everything.'], ' lends ', ['books', 'Class', 'Book'], ', ', ['DVDs', 'Class', 'DVD'], ' and ', ['magazines', 'Class', 'Magazine'],
@@ -266,12 +266,12 @@ const CATS = ['Class', 'Object', 'Field', 'Method', 'Rule'];
 
 function mapCard(){
   const m = LAB.map;
-  if (!m) return `<div class="mapcard"><div class="mc-k">Try it</div><h5>Click anything in the scene</h5><p>The building, the circulation desk, the shelves, the database, a box or a member pin. Or pick a row below. Each one shows how a real-world thing becomes code.</p></div>`;
+  if (!m) return `<div class="mapcard"><div class="mc-k">Try it</div><h5>Click anything in the scene</h5><p>The building, the reception, the shelves, the records database, a box or a member waiting outside. Or pick a row below. Each one shows how a real-world thing becomes code.</p></div>`;
   if (m.k === 'item' && m.id && library.hasItem(m.id)){
     const i = library.getItems().find(x => x.getId() === m.id), t = i.constructor.name;
     const ctor = i instanceof Book ? `"${i.getAuthor()}"` : i instanceof DVD ? i.getDurationMinutes() : i instanceof Magazine ? i.getIssueNumber() : '…';
     const is = chainOf(t).slice(0, -1).concat(['Loanable', ...(isReservable(i) ? ['Reservable'] : [])]);
-    return `<div class="mapcard"><div class="mc-k">Real world → object</div><h5>"${esc(i.getTitle())}" on the ${t === 'Book' ? 'book' : t === 'DVD' ? 'DVD' : t === 'Magazine' ? 'magazine' : 'lab'} shelf</h5>
+    return `<div class="mapcard"><div class="mc-k">Real world → object</div><h5>"${esc(i.getTitle())}" ${i.isBorrowed() ? `out on loan with ${esc(i.getBorrower().getName())}` : `on the ${t === 'Book' ? 'Books' : t === 'DVD' ? 'DVDs' : t === 'Magazine' ? 'Magazines' : 'Your subclasses'} shelf inside the library`}</h5>
       <p>This copy is one <b>object</b> made from the <b>${esc(t)}</b> class. Its values are kept in private fields.</p>
       ${codeBox(`${t} item = new ${t}("${i.getId()}", "${i.getTitle()}", ${ctor});\nitem.isBorrowed();   // ${i.isBorrowed()}\nitem.calculateLateFee(3);   // ${i.calculateLateFee(3).toFixed(1)}`)}
       <p>It is a ${is.map(x => `<code>${esc(x)}</code>`).join(', ')}, so it can be stored or passed anywhere one of those types is expected.</p>
@@ -279,7 +279,7 @@ function mapCard(){
   }
   if (m.k === 'member' && m.id && library.hasMember(m.id)){
     const p = library.getMembers().find(x => x.getMemberId() === m.id), t = p.constructor.name;
-    return `<div class="mapcard"><div class="mc-k">Real world → object</div><h5>${esc(p.getName())}, holding a library card</h5>
+    return `<div class="mapcard"><div class="mc-k">Real world → object</div><h5>${esc(p.getName())}, waiting outside with a library card</h5>
       <p>One <b>${esc(t)}</b> object. The card number, name and loan count are private fields. The limit of ${p.getMaxBorrowLimit()} comes from the ${esc(t)} constructor through <code>super(...)</code>.</p>
       ${codeBox(`Member m = new ${t}("${p.getMemberId()}", "${p.getName()}");\nm.getBorrowedCount();   // ${p.getBorrowedCount()}\nm.getMaxBorrowLimit();  // ${p.getMaxBorrowLimit()}`)}
       <div class="ctl"><button class="btn sm" data-go="enc">Open the capsule →</button><button class="btn sm" data-go="inh">Student vs Staff →</button></div></div>`;
@@ -673,7 +673,7 @@ const TABS = {
       const A = LAB.abs, room = ROOM, roomCompiles = A.roomLoan && A.roomReturn;
       const missing = [!A.roomLoan && 'loan(Member)', !A.roomReturn && 'returnItem()'].filter(Boolean);
       const memOpts = library.getMembers().map(m => `<option value="${esc(m.getMemberId())}" ${m.getMemberId() === A.mem ? 'selected' : ''}>${esc(m.getName())}</option>`).join('');
-      return `${analogy('🧩', 'One button at the desk', 'To borrow a book you hand it over and the librarian presses <b>Borrow</b>. You don\'t need to know about borrow limits, SQL or files on disk. The details are still there, hidden behind a simple interface.', 'show <b>what</b> something does and hide <b>how</b> it does it. Abstract classes and interfaces define the "what"; subclasses fill in the "how".')}
+      return `${analogy('🧩', 'One button at the desk', 'At the reception you ask for a book and the librarian presses <b>Borrow</b>. You don\'t need to know about borrow limits, SQL or files on disk. The details are still there, hidden behind a simple interface.', 'show <b>what</b> something does and hide <b>how</b> it does it. Abstract classes and interfaces define the "what"; subclasses fill in the "how".')}
         <div class="lcard"><h4>1 · Peel back the layers of "Borrow"</h4><div class="c-sub">Each layer talks to the one below only through a small public method.</div>
           <div class="ctl"><label class="grow">how much detail: <b>${A.level} / ${LAYERS_DEEP.length}</b><input type="range" min="1" max="${LAYERS_DEEP.length}" value="${A.level}" id="aLevel"/></label></div>
           <div class="layers">${layersHtml(A.level)}</div></div>
