@@ -758,7 +758,7 @@ function buildStatic(){
   // reception: the librarian behind the desk, the desk, a returns trolley
   const [lx, ly] = P(12.0, 9.75, 0);
   g += `<g data-map="desk" class="hot"><g transform="translate(${lx},${ly})"><title>The librarian (the View: MainFrame)</title><ellipse rx="12" ry="6" fill="rgba(30,58,110,.18)"/>
-    <path d="${PIN}" transform="scale(.85)" fill="#0f172a" stroke="#fff" stroke-width="2.5"/><text y="-19" text-anchor="middle" font-size="10" font-weight="800" fill="#fff">LB</text></g>`;
+    ${personSvg('#0f172a', 'LB', '#e0ac69')}</g>`;
   g += box(9.4, 10.3, 0, 5.4, 1.0, 1.05, '#ffffff') + flat(9.4, 10.3, 5.4, 1.0, '#2563eb', 1.06, 'opacity=".85"');
   g += box(10.1, 10.45, 1.06, 0.55, 0.4, 0.42, '#1e293b') + box(13.4, 10.45, 1.06, 0.55, 0.4, 0.42, '#1e293b');
   g += faceL(9.9, 11.3, 0.32, 'RECEPTION', 10, '#2563eb', 800) + '</g>';
@@ -782,17 +782,34 @@ function buildStatic(){
     + labelPin(15.2, 15.2, 0.1, 'Entrance', '#15803d');
 }
 
-function itemShape(type){
-  const c = COLORS[type] || '#2bb3a0';
-  let deco = '';
-  if (type === 'Book') deco = `<polygon points="${pts([[0.4,0,0.56],[0.55,0,0.56],[0.55,0.95,0.56],[0.4,0.95,0.56]])}" fill="${shade(c,-0.25)}" opacity=".7"/>`;
-  if (type === 'DVD') { const [x, y] = P(0.47, 0.47, 0.56); deco = `<ellipse cx="${x}" cy="${y}" rx="8" ry="4.5" fill="#fff" opacity=".85"/><ellipse cx="${x}" cy="${y}" rx="2.2" ry="1.3" fill="${c}"/>`; }
-  if (type === 'Magazine') deco = `<polyline points="${pts([[0.2,0.25,0.56],[0.75,0.25,0.56]])}" stroke="#fff" stroke-width="1.6"/><polyline points="${pts([[0.2,0.5,0.56],[0.75,0.5,0.56]])}" stroke="#fff" stroke-width="1.6"/>`;
-  const [px, py] = P(0.47, 0.47, 0.6), [fx, fy] = P(0.8, 0.2, 0.55), [ox, oy] = P(0.47, 0.47, 0);
-  return `<g class="od"><circle cx="${ox}" cy="${oy}" r="18" fill="none" stroke="#dc2626" stroke-width="3"/></g>
-    <g class="shape">${box(0, 0, 0, 0.95, 0.95, 0.55, c)}${deco}</g>
-    <g class="flag"><line x1="${fx}" y1="${fy}" x2="${fx}" y2="${fy-18}" stroke="#92400e" stroke-width="1.6"/><path d="M${fx} ${fy-18} l11 4 -11 4z" fill="#f59e0b"/></g>
-    <g class="selpin" transform="translate(${px},${py-4})"><path d="${PIN}" transform="scale(.8)" fill="#2563eb" stroke="#fff" stroke-width="2"/><circle cx="0" cy="-21" r="5" fill="#fff"/></g>`;
+/* ---- scene icons ---- */
+const GLYPH = {
+  book: '<path d="M2.5 5.5c3-1.6 6.2-1.6 9.5.8v13.4c-3.3-2.4-6.5-2.4-9.5-.8z" fill="#fff"/><path d="M21.5 5.5c-3-1.6-6.2-1.6-9.5.8v13.4c3.3-2.4 6.5-2.4 9.5-.8z" fill="#fff" opacity=".82"/><path d="M5 9h4.5M5 12h4.5M14.5 9H19M14.5 12H19" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>',
+  disc: '<circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M12 2.5a9.5 9.5 0 0 1 9.2 7.1L12 12z" fill="currentColor" opacity=".25"/><circle cx="12" cy="12" r="3.4" fill="currentColor" opacity=".55"/><circle cx="12" cy="12" r="1.5" fill="#fff"/>',
+  magazine: '<rect x="4.5" y="2.5" width="15" height="19" rx="1.6" fill="#fff"/><rect x="4.5" y="2.5" width="15" height="5" rx="1.6" fill="currentColor" opacity=".55"/><rect x="7" y="9.5" width="10" height="6" rx="1" fill="currentColor" opacity=".3"/><path d="M7 18h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>',
+  other: '<path d="M12 2.5 21 7v10l-9 4.5L3 17V7z" fill="#fff"/><path d="M3 7l9 4.5L21 7M12 11.5V21.5" stroke="currentColor" stroke-width="1.2" fill="none"/>'
+};
+const ICON_COLOR = { Book: '#c27a34', DVD: '#5b63e6', Magazine: '#db4b77' };
+const glyphOf = it => it instanceof Book ? 'book' : it instanceof DVD ? 'disc' : it instanceof Magazine ? 'magazine' : 'other';
+/** A standing icon card: book / DVD / magazine glyph. Lab subclasses use their parent's glyph in teal. */
+function itemShape(it){
+  const c = ICON_COLOR[it.constructor.name] || '#0f9488';
+  return `<g class="od"><ellipse cx="0" cy="0" rx="17" ry="8.5" fill="none" stroke="#dc2626" stroke-width="3"/></g>
+    <ellipse cx="0" cy="0" rx="12" ry="5" fill="rgba(30,58,110,.2)"/>
+    <g class="shape"><rect x="-13" y="-34" width="26" height="30" rx="7" fill="${c}" stroke="#fff" stroke-width="2"/>
+      <rect x="-13" y="-34" width="26" height="12" rx="7" fill="#fff" opacity=".14"/>
+      <svg x="-10" y="-31" width="20" height="24" viewBox="0 0 24 24" color="${c}">${GLYPH[glyphOf(it)]}</svg></g>
+    <g class="flag"><path d="M7 -36 v11 l3.5 -2.6 l3.5 2.6 v-11z" fill="#f59e0b" stroke="#fff" stroke-width="1"/></g>
+    <g class="selpin" transform="translate(0,-38)"><path d="${PIN}" transform="scale(.75)" fill="#2563eb" stroke="#fff" stroke-width="2"/><circle cx="0" cy="-19.5" r="4.5" fill="#fff"/></g>`;
+}
+/* A person: legs, torso in the member's colour, head, hair, initials on the shirt. */
+const SKIN = ['#f1c27d', '#c68642', '#8d5524', '#e0ac69', '#ffdbac', '#a0672c'];
+function personSvg(color, initials, skin){
+  return `<rect x="-6.5" y="-11" width="5.5" height="11" rx="2" fill="#334155"/><rect x="1" y="-11" width="5.5" height="11" rx="2" fill="#334155"/>
+    <path d="M-10 -9 v-12 q0 -7 7 -7 h6 q7 0 7 7 v12 z" fill="${color}" stroke="#fff" stroke-width="1.6"/>
+    <circle cx="0" cy="-35" r="7.5" fill="${skin}" stroke="#fff" stroke-width="1.6"/>
+    <path d="M-7.4 -36 a7.5 7.5 0 0 1 14.8 0 q-7.4 -3.6 -14.8 0z" fill="#1f2937"/>
+    <text x="0" y="-15" text-anchor="middle" font-size="8" font-weight="800" fill="#fff">${initials}</text>`;
 }
 
 const itemEls = new Map(), memEls = new Map();
@@ -813,18 +830,18 @@ function renderScene(opts = {}){
     const slot = z.slots[idx % z.slots.length], layer = Math.floor(idx / z.slots.length);
     let wx, wy, wz, sc = 1;
     const at = V && V.iid === it.getId() ? V.itemAt : null;      // mid-animation override (shelf / desk / member)
-    const carried = mid => { const mp = mpos.get(mid), k = held.get(mid) || 0; held.set(mid, k + 1); return [mp[0] + 0.25 + (k % 2) * 0.05, mp[1] - 1.15, k * 0.34, 0.6]; };
+    const carried = mid => { const mp = mpos.get(mid), k = held.get(mid) || 0; held.set(mid, k + 1); return [mp[0] - 0.05, mp[1] - 0.95, 0.35 + k * 0.62, 0.6]; };
     if (it.isBorrowed() || at) ghosts += layer === 0 && at !== 'shelf' ? flat(slot[0], slot[1], 0.95, 0.95, 'none', SHELF_Z + 0.01, 'stroke="#94a3b8" stroke-dasharray="3 3" stroke-width="1.2"') : '';
-    if (at === 'desk'){ [wx, wy, wz] = DESK_SPOT; sc = 0.75; }
+    if (at === 'desk'){ [wx, wy, wz] = DESK_SPOT; sc = 0.8; }
     else if (at === 'member') [wx, wy, wz, sc] = carried(V.mid);
     else if (at !== 'shelf' && it.isBorrowed()) [wx, wy, wz, sc] = carried(it.getBorrower().getMemberId());
     else { wx = slot[0]; wy = slot[1]; wz = SHELF_Z + layer * 0.58; }
     const id = it.getId(); live.add(id);
     let g = itemEls.get(id);
-    const [sx, sy] = P(wx, wy, wz);
+    const [sx, sy] = P(wx + 0.47, wy + 0.47, wz);
     if (!g){
       g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.classList.add('it'); g.dataset.id = id; g.innerHTML = itemShape(type);
+      g.classList.add('it'); g.dataset.id = id; g.innerHTML = itemShape(it);
       g.addEventListener('click', e => { if (!dragMoved) select('item', id); });
       dyn.appendChild(g); itemEls.set(id, g);
       if (opts.spawnFrom){ g.style.transition = 'none'; setTf(g, ...opts.spawnFrom, 0.6); g.getBoundingClientRect(); g.style.transition = ''; }
@@ -852,10 +869,10 @@ function renderScene(opts = {}){
     const ini = m.getName().split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
     const nm = esc(m.getName()), nw = m.getName().length * 6.3 + 20, badge = `${m.getBorrowedCount()}/${m.getMaxBorrowLimit()}`;
     g.innerHTML = `<ellipse cx="0" cy="0" rx="14" ry="7" fill="rgba(30,58,110,.18)"/>
-      <g class="pinbody"><path d="${PIN}" fill="${col}" stroke="#fff" stroke-width="2.5"/><text x="0" y="-21.5" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">${esc(ini)}</text></g>
+      <g class="pinbody">${personSvg(col, esc(ini), SKIN[i % SKIN.length])}</g>
       <g transform="translate(0,13)"><rect x="-15" y="-8" width="30" height="16" rx="8" fill="${full ? '#fee2e2' : '#fff'}" stroke="${full ? '#fca5a5' : '#dbe3ef'}"/>
       <text x="0" y="4" text-anchor="middle" font-size="10" font-weight="700" fill="${full ? '#dc2626' : '#334155'}">${badge}</text></g>
-      <g class="mname" transform="translate(0,-54)"><rect x="${-nw/2}" y="-11" width="${nw}" height="22" rx="11" fill="#0f172a"/><text x="0" y="4" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">${nm}</text></g>`;
+      <g class="mname" transform="translate(0,-56)"><rect x="${-nw/2}" y="-11" width="${nw}" height="22" rx="11" fill="#0f172a"/><text x="0" y="4" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">${nm}</text></g>`;
     g.classList.toggle('sel', STATE.sel?.kind === 'member' && STATE.sel.id === id);
     g.classList.toggle('visiting', !!V && V.mid === id);
     g.classList.toggle('dim', !!match);
